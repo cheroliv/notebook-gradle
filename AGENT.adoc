@@ -1,0 +1,282 @@
+= Notebook Gradle — Directives Agent
+:toc: left
+:toclevels: 3
+:icons: font
+:sectnums:
+
+[CAUTION]
+====
+**ARRET OBLIGATOIRE** avant `rm`, `Write` (ecrasement), ou suppression de fichier :
+1. LIRE le fichier en entier
+2. VERIFIER `git ls-files -- <fichier>` (si pas dans git = pas de retour possible)
+3. DEMANDER confirmation fichier par fichier a l'utilisateur
+4. ATTENDRE "oui" avant d'agir
+====
+
+== Projet
+
+**Nom** : notebook-gradle — Plugin Gradle d'observabilite pour notebooks Google Colab.
+Pipeline de logging automatise (Colab → Sheets → GAS → GitHub → CI/CD Gradle)
+avec boucle de correction IA et historique CSV modelisable.
+
+**Stack** : Kotlin, Gradle, Google Apps Script, Google Sheets API, GitHub API,
+huggingface_hub, gspread
+
+**Documentation** : AsciiDoc
+
+=== Contexte — Cercles de Confiance
+
+Ce projet vit dans `__repositories__/notebook-gradle/` → *cercle 4 (public, MIT)*.
+- Ne pas referencer de secrets ici (ils sont dans `configuration/`, cercle 1)
+- La data consommee est dans `office/` (cercle 2)
+- Les notebooks sources sont dans `office/notebooks/` (cercle 2)
+- Voir `configuration/.agents/AGENT_GOVERNANCE.adoc` pour l'ontologie spatiale complete
+
+=== Objectif
+
+Fournir un plugin Gradle qui automatise le pipeline d'observabilite des notebooks
+Google Colab :
+
+. *Logging automatique* : injection de cellules de log dans les notebooks via
+  `gspread` + authentification OAuth Colab
+. *Detection d'erreurs* : un script Google Apps Script (GAS) attache au spreadsheet
+  scrute les logs et exporte en CSV vers GitHub
+. *CI/CD reactif* : GitHub Actions detecte les nouveaux CSV et lance des taches Gradle
+  (analyse, alerte, correction IA)
+. *Correction IA* : une tache Gradle assistee par LLM propose une correction du
+  notebook, la push sur une branche `fix/` et met a jour Google Drive
+. *Historique modelisable* : chaque CSV horodate dans Git forme une serie
+  temporelle exploitable pour la prediction de duree, la detection de degradation
+  GPU, et l'apprentissage des patterns d'erreur
+
+== Regles Absolues
+
+=== Git
+
+**INTERDICTION FORMELLE** de commit/push/merge sans permission explicite de l'utilisateur.
+
+Commandes autorisees (lecture seule) : `git status`, `git diff`, `git log`, `git show`
+Commandes interdites (sauf ordre) : `git add`, `git commit`, `git push`, `git merge`, `git rebase`
+
+=== Tests
+
+L'agent NE DOIT JAMAIS lancer de tests (`./gradlew test`, etc.) lors de la procedure
+de fin de session SANS permission explicite de l'utilisateur.
+
+=== Securite
+
+* Jamais de secrets en dur dans le code
+* Jamais de credentials dans les fichiers de config
+* Jamais de tokens API commites dans Git
+* Utiliser des references (`keyRef: ${GITHUB_TOKEN}`)
+
+=== Secrets et tokens — INTERDICTION DE LOG
+
+**PRINCIPE** : Les tokens API, mots de passe, et identifiants credentials NE DOIVENT
+JAMAIS apparaitre dans la sortie terminal de l'agent.
+
+**INTERDICTIONS** :
+
+* **NE JAMAIS** passer un token en argument visible d'une commande
+* **NE JAMAIS** afficher le contenu d'un fichier contenant des tokens
+* **NE JAMAIS** utiliser `echo`, `cat`, ou toute commande qui affiche des tokens
+  dans le terminal
+
+=== Fichiers de configuration — REGLE ABSOLUE DE SURETE
+
+**PRINCIPE** : Tout fichier de configuration (YAML, JSON, XML, TOML, properties,
+.env, etc.) peut contenir des donnees sensibles non versionnees. Modifier un tel
+fichier sans precaution met en danger l'integrite du travail du developpeur.
+
+**INTERDICTIONS** :
+
+* **NE JAMAIS ecraser** un fichier de configuration existant avec un `Write` complet
+  si on peut faire un `Edit` partiel
+* **NE JAMAIS remplacer** des valeurs sensibles existantes (tokens, mots de passe,
+  cles API, URLs de production) par des valeurs factices ou placeholders
+* **NE JAMAIS modifier** un fichier sans avoir **d'abord** verifie s'il est dans
+  `.gitignore` (`git check-ignore <fichier>`) — un fichier ignore n'a pas de
+  `git restore` possible
+
+**Procedure OBLIGATOIRE** avant modification d'un fichier de configuration :
+
+. `git check-ignore <fichier>` : Verifier si le fichier est versionne
+. `git ls-files -- <fichier>` : Confirmer s'il est tracke
+. Si le fichier **n'est pas tracke** (pas dans git) : **CREER UNE SAUVEGARDE** avant
+  toute modification (`cp <fichier> <fichier>.bak`)
+. Si le fichier contient des valeurs sensibles : **les PRESERVER intactes**, ne jamais
+  les remplacer par des placeholders
+. Privilegier **l'edit partiel** (modification ciblee) plutot que **l'ecriture complete**
+  (ecrasement total)
+. Apres modification : **verifier** que les valeurs sensibles sont toujours presentes
+
+=== Fichiers personnels — Interdiction de modifier
+
+_L'agent NE DOIT JAMAIS_ modifier, ecraser ou supprimer un fichier personnel de
+l'utilisateur (`~/.gitconfig`, `~/.bashrc`, `~/.ssh/config`, `~/.zshrc`, etc.)
+_SANS permission explicite de l'utilisateur_.
+
+=== Methodologie de Travail
+
+* **1 fichier a la fois** : Modifier un seul fichier avant de passer au suivant
+* **Validation immediate** : Compiler apres chaque modification
+* **Contexte leger** : Maximum 50k tokens EAGER (~3000 lignes)
+* **Regle d'or** : Mieux vaut 5 sessions de 20 minutes qu'une session de 2 heures
+  avec debugging chaos. Si la conversation > 50 messages ou > 3 fichiers modifies
+  en parallele, splitter en nouvelle session.
+
+== Architecture du Projet
+
+[source,bash]
+----
+notebook-gradle/                     # RACINE GIT (cercle 4)
+├── build.gradle.kts                 # Build plugin Gradle
+├── settings.gradle.kts              # rootProject.name = "notebook-gradle"
+├── src/
+│   ├── main/kotlin/com/cheroliv/notebook/
+│   │   ├── NotebookLoggingPlugin.kt # Plugin principal
+│   │   ├── LoggingInjector.kt       # Injection cellules de log
+│   │   ├── GasDeployer.kt           # Deploiement script GAS
+│   │   └── CsvAnalyzer.kt           # Analyse et modelisation CSV
+│   └── test/kotlin/                 # Tests unitaires
+├── templates/                       # Templates GAS (.gs) et notebook (.ipynb)
+│   ├── gas/                         # Scripts GAS (detection, export, push)
+│   └── notebook/                    # Cellules de log a injecter
+├── gradle/libs.versions.toml        # Version catalog
+├── .agents/                         # Gouvernance agent
+│   ├── INDEX.adoc                   # Dashboard EAGER
+│   ├── sessions/                    # Archives par session
+│   ├── archives/                    # Archives mensuelles
+│   ├── encyclopedies/               # Connaissance thematique froide (COLD)
+│   └── backup/                      # Vagues froides (snapshots horodates)
+├── PROMPT_REPRISE.adoc              # Mission session en cours (EAGER)
+├── BACKLOG.adoc                     # Suivi prioritaire des taches
+├── LAZY_EAGER_ESSENTIALS.adoc       # Principes LAZY/EAGER
+├── AGENT.adoc                       # Directives completes (ce fichier)
+└── opencode.json                    # Configuration opencode
+----
+
+== Gestion du Contexte — CRITIQUE
+
+* **Que faire ensuite ?** -> **`BACKLOG.adoc`** (suivi autoritaire et prioritaire des
+  taches/bugs)
+* **`PROMPT_REPRISE.adoc`** -> mission de la session en cours et priorites de la
+  prochaine session
+
+== Session Procedure
+
+=== Debut de Session
+
+1. Lire `PROMPT_REPRISE.adoc` pour la mission en cours
+2. Lire `.agents/INDEX.adoc` pour les regles absolues
+3. Charger les fichiers ESSENTIALS si l'EPIC est concernee
+
+=== Fin de Session
+
+**Mots-cles declencheurs** : "nouvelle session", "je quitte", "session terminee",
+"a plus tard", "on arrete la"
+
+**Procedure obligatoire en 6 etapes** :
+
+1. **Creer l'archive LAZY** : `.agents/sessions/{N}-{type}-{sujet}.adoc`
+2. **Mettre a jour PROMPT_REPRISE.adoc** — Mission N+1 (max 70 lignes)
+3. **Mettre a jour SESSIONS_HISTORY.adoc** : `.agents/SESSIONS_HISTORY.adoc` —
+   Ajouter la session terminee
+4. **Mettre a jour INDEX.adoc** : `.agents/INDEX.adoc` — Date, session en cours N+1,
+   roadmap, portefeuille
+5. **Mettre a jour TEST_COVERAGE_ANALYSIS.adoc** (si tests modifies)
+6. **Mettre a jour COMPLETED_TASKS_ARCHIVE.adoc** :
+   `.agents/archives/COMPLETED_TASKS_ARCHIVE_{mois}.adoc`
+
+**Aucune etape ne peut etre marquee OK si le fichier n'a pas ete effectivement
+modifie et verifie.**
+
+==== Rotation Backup (etape 7 optionnelle)
+
+**Declenchement automatique** — Apres l'etape 6, avant la checklist, l'agent verifie :
+
+. `N % 10 == 0` (session multiple de 10)
+. **OU** les fichiers EAGER cumules depassent **500 lignes**
+
+Si l'une des conditions est vraie, l'agent **execute l'etape 7** :
+
+. Creer le dossier `.agents/backup/Y{annee}-sessions-{plage}/`
+. Y copier **integralement** INDEX, SESSIONS_HISTORY, COMPLETED_TASKS_ARCHIVE et
+  les fichiers sessions/ concernes
+. Tronquer les fichiers actifs aux **10 dernieres sessions** (sliding window)
+. Ajouter la localisation de la nouvelle vague dans INDEX.adoc
+
+=== Mecanisme de backup — Vague froide
+
+_Principe_ : Tous les **10 sessions**, les donnees historiques sont copiees
+**integralement** dans `.agents/backup/` sans transformation. Les fichiers actifs
+sont tronques pour ne contenir que les 10 dernieres sessions (sliding window).
+
+Le backup **N'EST JAMAIS** charge automatiquement par l'agent.
+
+== Conventions de Code
+
+* Kotlin idiomatic, pas de commentaires sauf demande
+* Tests : JUnit5 + testcontainers
+* Documentation : AsciiDoc (.adoc) uniquement
+* Plugin Gradle standard (extension, tasks, convention plugins)
+
+=== References de Style — Codebases LAZY
+
+_Regle_ : Quand l'agent a besoin de reflechir au style de code, conventions
+Kotlin/Gradle, ou patterns de plugin, il DOIT consulter ces codebases comme
+reference. Ces chemins sont LAZY — ne jamais charger leur contenu en EAGER.
+
+|===
+| Projet | Chemin | Role
+| plantuml-gradle | `/home/cheroliv/workspace/__repositories__/plantuml-gradle/plantuml-plugin` | Plugin Gradle mature, reference principale
+| bakery-gradle | `/home/cheroliv/workspace/__repositories__/bakery-gradle/bakery-plugin` | Plugin Gradle convention-based
+| codebase-gradle | `/home/cheroliv/workspace/__repositories__/codebase-gradle` | Plugin Gradle (fine-tuning, BYOK)
+| newpipe-gradle | `/home/cheroliv/workspace/__repositories__/newpipe-gradle` | Plugin Gradle
+| slider-gradle | `/home/cheroliv/workspace/__repositories__/slider-gradle` | Plugin Gradle
+| readme-gradle | `/home/cheroliv/workspace/__repositories__/readme-gradle` | Plugin Gradle
+|===
+
+== Fichiers EAGER (charges automatiquement)
+
+|===
+| Fichier | Role
+
+| `PROMPT_REPRISE.adoc` | Mission session en cours (max 70 lignes)
+| `.agents/INDEX.adoc` | Regles absolues + sessions recentes
+| `LAZY_EAGER_ESSENTIALS.adoc` | Principes LAZY/EAGER + politique de chargement
+| `AGENT.adoc` | Ce fichier — Directives completes
+|===
+
+=== Mecanisme de Backup — Hot/Warm/Cold Storage
+
+* **Hot (EAGER)** : 10 dernieres sessions dans INDEX, PROMPT_REPRISE N+1, sessions
+  N-1 et N
+* **Warm (LAZY)** : references techniques, procedures, agents specialises
+* **Cold (`backup/`)** : Sessions N-10 et anterieures — copie integrale, sans
+  transformation
+* **Cold (`encyclopedies/`)** : Connaissance thematique exhaustive — jamais charge
+  automatiquement, humain seulement
+
+=== Defense en Profondeur — Les 3 Couches
+
+. **EAGER/LAZY** — structure par *disponibilite* (tableau de bord vs manuel du
+  proprietaire)
+. **Hot/Warm/Cold** — structure par *fraicheur* (10 sessions actives vs references
+  vs backup)
+. **ESSENTIALS/encyclopedie** — structure par *densite* (essentiel compact vs
+  connaissance exhaustive)
+
+== Anti-Patterns
+
+[cols="1,3,3,3"]
+|===
+| # | Anti-pattern | Symptome | Correction
+| 1 | **Agent sans `opencode.json`** | L'agent demarre nu, pose des questions basiques deja dans AGENT.adoc | `opencode.json` doit toujours contenir `"instructions": ["AGENT.adoc"]`
+| 2 | **Trop d'agents trop tot** | Multiples agents specialises crees avant que le projet soit stable | Attendre 10+ sessions avant de splitter en agents specialises
+| 3 | **PROMPT_REPRISE fantome** | PROMPT_REPRISE existe mais n'est pas mis a jour en fin de session | L'etape 2 de la procedure de fin de session est obligatoire
+| 4 | **Archive vide** | Le fichier de session cree mais sans contenu utile | Template obligatoire : contexte, actions, commandes, resultats, lecons
+| 5 | **Portefeuille fantome** | INDEX.adoc liste des projets qui ne sont plus gouvernes | Mettre a jour le portefeuille a chaque fin de session
+| 6 | **Redondance cachee** | AGENT.adoc et INDEX.adoc decrivent les memes regles avec des divergences | INDEX reference AGENT, pas de duplication
+| 7 | **Session trop longue** | > 50 messages ou > 3 fichiers paralleles | Splitter. 5x20min > 1x2h.
+|===

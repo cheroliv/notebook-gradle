@@ -1,0 +1,16 @@
+= COMPLETED_TASKS_ARCHIVE — Mai 2026 — Notebook Gradle
+
+_Session 1 — 2026-05-05 — Planification et initialisation_
+
+* [x] AGENT.adoc adapte au contexte notebook-gradle
+* [x] BACKLOG.adoc redige avec 7 EPICs
+* [x] .agents/INDEX.adoc initialise
+* [x] PROMPT_REPRISE.adoc cree pour session 1 + mis a jour pour session 2
+* [x] LAZY_EAGER_ESSENTIALS.adoc cree
+* [x] opencode.json cree
+* [x] settings.gradle.kts + build.gradle.kts minimal
+* [x] Ajout notebook-gradle au portefeuille transverse codebase-gradle
+* [x] Creation repo GitHub + push initial
+* [x] Archive session 001 creee
+* [x] SESSIONS_HISTORY.adoc initialise
+* [x] TEST_COVERAGE_ANALYSIS.adoc initialise

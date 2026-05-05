@@ -1,0 +1,56 @@
+= PROMPT_REPRISE — Notebook Gradle — Session 2
+
+> **Statut** : Session 1 ✅ — Planification terminee, repo cree
+> **Mission** : Implemeter EPIC 2 — Logger Automatique Colab → Sheets
+
+'''
+== Session 1 — Resume
+
+**Date** : 2026-05-05
+**Resultat** : ✅ Structure projet creee, gouvernance agent en place, BACKLOG
+(7 EPICs) redige, repo GitHub initialise. Pipeline d'observabilite documente
+dans office/pilotage/observabilite_colab_cicd.adoc.
+
+**Archive** : `.agents/sessions/001-planification-initialisation.adoc`
+
+'''
+== Session 2 — Priorites
+
+=== Objectif principal
+
+**EPIC 2 — Implemeter le Logging Automatique Colab → Sheets**
+
+- Implemeter `NotebookLoggingPlugin` :
+  - Extension `notebook { spreadsheetId, sheetName, autoInstrument }`
+  - `LoggingInjector` : parser notebook JSON, wrapper try/except,
+    injecter cellules de log gspread
+  - Template de cellule de log standard
+- Tache `instrumentNotebook` : .ipynb → .ipynb instrumente
+- Tests : validation nbformat, injection correcte
+
+=== Criteres d'Acceptation
+
+- [ ] Extension `notebook { }` fonctionnelle dans build.gradle.kts
+- [ ] `instrumentNotebook` transforme un notebook vierge en notebook
+  instrumente (auth + log_step + try/except)
+- [ ] Tests unitaires : injection, nbformat validation
+- [ ] README.adoc expliquant l'usage
+
+'''
+== Couverture Tests
+
+|===
+| Feature | Etat
+| Plugin apply + extension | ❌
+| LoggingInjector | ❌
+| instrumentNotebook task | ❌
+|===
+
+'''
+== Regles
+
+- ❌ Pas de commit sans permission
+- ❌ Pas de tests en fin de session
+- ✅ Procedure de fin de session 6 etapes obligatoires
+- ✅ Pattern Baby-Step : max 3 pts par US
+- ✅ publishToMavenLocal apres chaque modif du code source

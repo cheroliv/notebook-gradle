@@ -1,0 +1,59 @@
+= Session 001 — Planification et initialisation — Notebook Gradle
+
+== Contexte
+
+Premiere session du projet notebook-gradle. L'objectif etait de planifier le
+perimetre du plugin et d'initialiser la gouvernance agent avant toute ligne
+de code.
+
+Le plugin automatise le pipeline d'observabilite des notebooks Google Colab :
+Colab → Sheets → GAS → GitHub → CI/CD Gradle → correction IA → historique CSV.
+
+Le contexte metier vient d'etre pose avec le recrutement du premier expert
+PlantUML (fine-tuning Gemma 4 sur Colab, deploye sur Ollama Cloud).
+Ce pipeline d'observabilite est la brique suivante : permettre de prototyper
+des notebooks de fine-tuning sur des petits modeles avant de scaler.
+
+== Actions
+
+1. Creation de la structure du projet `__repositories__/notebook-gradle/`
+2. Redaction de `AGENT.adoc` (directives agent, cercles de confiance, references LAZY)
+3. Redaction de `LAZY_EAGER_ESSENTIALS.adoc`
+4. Redaction de `PROMPT_REPRISE.adoc` pour session 1
+5. Redaction de `BACKLOG.adoc` avec 7 EPICs :
+   - EPIC 1 : Planification et initialisation
+   - EPIC 2 : Logger automatique Colab → Sheets
+   - EPIC 3 : Deploiement script GAS
+   - EPIC 4 : CI/CD — Actions + analyse CSV
+   - EPIC 5 : Correction IA notebook (fermeture de boucle)
+   - EPIC 6 : Modelisation historique CSV
+   - EPIC 7 : Strategie prototypage progressif (6 niveaux de maturite)
+6. Creation de `.agents/` : INDEX, SESSIONS_HISTORY, TEST_COVERAGE_ANALYSIS,
+   dossiers sessions/archives/backup/encyclopedies/
+7. Creation de `settings.gradle.kts` + `build.gradle.kts` minimal
+8. Ajout de notebook-gradle au portefeuille transverse de codebase-gradle
+9. Creation du repo GitHub + push initial
+
+== Documents transverses crees dans office/pilotage/
+
+- `expert_plantuml.adoc` : recrutement du premier expert (datasets HF, formation
+  Colab, deploiement Ollama Cloud)
+- `observabilite_colab_cicd.adoc` : pipeline d'observabilite complet avec code
+  Python (gspread), JavaScript (GAS), YAML (Actions), Kotlin (Gradle),
+  Python (modelisation CSV)
+
+== Commandes
+
+- `mkdir -p __repositories__/notebook-gradle/.agents/{sessions,archives,backup,encyclopedies}`
+- `gh repo create notebook-gradle --public --description "Plugin Gradle d'observabilite pour notebooks Google Colab"`
+- `git init && git add . && git commit -m "..." && git push`
+
+== Lecons
+
+- Le pattern de gouvernance codebase-gradle est directement transposable a tout
+  nouveau projet Gradle. Les 6 etapes de bootstrap sont suffisantes.
+- Le BACKLOG du notebook-gradle est plus structure que la moyenne car le pipeline
+  est deja bien defini dans les documents de pilotage. Les EPICs 2-6 ont des
+  sous-taches precises pretes a etre codees.
+- Le secret `OLLAMA_KEY` dans Colab doit contenir la cle PRIVEE ed25519, pas
+  la publique. Piège classique documenté.

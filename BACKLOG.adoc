@@ -1,0 +1,294 @@
+= Backlog — Notebook Gradle
+:sectnums:
+
+== EPIC 1 : Planification et initialisation
+
+**Statut** : EN COURS
+**Priorite** : P0
+
+*Pourquoi* : Sans planification, le plugin naît sans direction. L'EPIC 1 fixe le
+perimetre, l'architecture cible, et la gouvernance agent avant toute ligne de code.
+
+=== Sous-taches
+
+* [ ] Rediger BACKLOG.adoc (ce fichier) — 5 EPICs decomposes
+* [ ] Rediger AGENT.adoc adapte au contexte notebook-gradle
+* [ ] Creer .agents/INDEX.adoc (dashboard EAGER)
+* [ ] Creer PROMPT_REPRISE.adoc pour session 2
+* [ ] Initialiser settings.gradle.kts + build.gradle.kts minimal
+* [ ] Ajouter notebook-gradle au portefeuille transverse
+  (`configuration/.agents/AGENT_GOVERNANCE.adoc` + INDEX.adoc des autres projets)
+* [ ] Commit initial notebook-gradle
+
+== EPIC 2 : Plugin Gradle — Logging Automatique Colab → Sheets
+
+**Statut** : A FAIRE
+**Priorite** : P0
+
+*Pourquoi* : Premiere brique du pipeline. Sans logs structures, pas de detection
+d'erreur, pas de correction IA. Le plugin doit injecter des cellules de log dans
+n'importe quel notebook `.ipynb`.
+
+=== Sous-taches
+
+* [ ] Definir l'extension Gradle `notebook { ... }` (spreadsheetId, sheetName,
+  autoInstrument)
+* [ ] Implemeter `LoggingInjector` :
+  - Parser le JSON du notebook (`nbformat`)
+  - Identifier les cellules de code existantes
+  - Wrapper `try/except` autour de chaque etape critique
+  - Injecter `log_step(phase, step, status, duration, error)` via `gspread`
+* [ ] Template de cellule de log standardisee (initialisation auth +
+  `log_step()`)
+* [ ] Tache `instrumentNotebook` : lit un `.ipynb`, injecte les logs, ecrit la
+  version instrumentee
+* [ ] Tests : notebook vide → notebook instrumente, validation `nbformat`
+* [ ] Documentation : `README.adoc` expliquant l'injection
+
+=== Consommation
+
+```kotlin
+// build.gradle.kts du projet consommateur
+plugins { id("com.cheroliv.notebook") version "0.1.0" }
+
+notebook {
+  spreadsheetId = "1ABC123..."
+  sheetName = "Logs PlantUML Expert"
+  autoInstrument = true
+}
+```
+
+== EPIC 3 : Déploiement Script GAS (Google Apps Script)
+
+**Statut** : A FAIRE
+**Priorite** : P0
+
+*Pourquoi* : Le script GAS est le pont entre Sheets et GitHub. Il detecte les
+erreurs, exporte en CSV, et push vers le repo. Le plugin Gradle doit pouvoir le
+deployer automatiquement sur le spreadsheet.
+
+=== Sous-taches
+
+* [ ] Template GAS `detectAndExport.gs` :
+  - `detectErrors()` : scan des lignes post dernier export
+  - `exportToCsv()` : conversion feuille → CSV
+  - `pushCsvToGitHub()` : `UrlFetchApp` → API GitHub
+  - `installTrigger()` : timer toutes les 10 min
+* [ ] Gestion des secrets GAS via `PropertiesService` (GITHUB_TOKEN,
+  GITHUB_REPO, CSV_FOLDER, BRANCH)
+* [ ] Tache Gradle `deployGasScript` :
+  - Deploie le script sur le spreadsheet via Google Apps Script API
+  - Installe le trigger temporel
+* [ ] Tests : mock `UrlFetchApp`, validation CSV export, validation push
+* [ ] Documentation : schema de deploiement, secrets a configurer
+
+=== Points de vigilance
+
+- `onEdit` ne reagit pas aux ecritures `gspread` → timer obligatoire
+- Le token GitHub doit avoir droits `contents: write`
+- Rate limiting : pas plus d'un push toutes les 10 min
+
+== EPIC 4 : CI/CD — GitHub Actions + Analyse CSV
+
+**Statut** : A FAIRE
+**Priorite** : P1
+
+*Pourquoi* : Une fois le CSV dans Git, il faut le traiter. Le plugin fournit
+une tache Gradle `analyzeColabLogs` lisible par n'importe quel workflow
+GitHub Actions.
+
+=== Sous-taches
+
+* [ ] Implemeter `CsvAnalyzer` :
+  - Parser CSV → `List<LogEntry>` (timestamp, phase, step, status, duration,
+    error)
+  - Statistiques : taux d'echec par phase, duree moyenne, ecart-type
+  - Detection de degradation : duree en hausse sur 3+ runs consecutifs
+  - Classification d'erreur : secret expire, OOM GPU, timeout reseau, etc.
+* [ ] Tache Gradle `analyzeColabLogs` :
+  - Lit le CSV passe en parametre (`LOG_FILE`)
+  - Sort un rapport AsciiDoc + exit code non-zero si erreurs critiques
+* [ ] Template GitHub Actions `colab-logs.yml` :
+  - `on.push.paths → logs/colab/**.csv`
+  - `./gradlew analyzeColabLogs`
+  - Alerte si `failure()`
+* [ ] Tests : CSV avec/sans erreurs, cas limites (CSV vide, malforme)
+* [ ] Documentation : integration CI/CD, exemple workflow
+
+== EPIC 5 : Correction IA du Notebook
+
+**Statut** : A FAIRE
+**Priorite** : P1
+
+*Pourquoi* : Le pipeline ne sert a rien s'il detecte sans corriger. L'EPIC 5
+ferme la boucle : une tache Gradle assistee par LLM (open code, Claude Code)
+propose une correction, push sur branche `fix/` et met a jour Google Drive.
+
+=== Sous-taches
+
+* [ ] Implemeter `NotebookCorrector` :
+  - Construire le prompt IA (CSV logs + notebook source + stack trace + plan
+    opencode)
+  - Appeler l'IA (CLI open code ou API LLM)
+  - Valider le notebook corrige (`nbformat.validate()`)
+  - Logger la correction proposee dans Sheets
+* [ ] Tache Gradle `correctNotebookViaIA` :
+  - Checkout branche `fix/colab-{date}`
+  - Ecrit notebook corrige
+  - Commit + push
+  - Met a jour Google Drive via API
+* [ ] Garde-fous :
+  - Ne jamais pusher sur `main` sans PR
+  - Validation nbformat obligatoire avant push
+  - Si 3 corrections consecutives echouent → escalade humaine
+* [ ] Fichier `PLAN.adoc` comme memoire persistante open code :
+  - Decisions passees, lecons apprises, regles "a ne pas faire"
+* [ ] Tests : mock LLM, validation nbformat, cas d'echec
+* [ ] Documentation : flux de correction, garde-fous, exemple PLAN.adoc
+
+=== Classification des erreurs et actions IA
+
+[cols="1,2,2"]
+|===
+| Categorie | Exemple | Action IA
+
+| Secret expire
+| `HF_TOKEN` invalide
+| Proposer rafraichissement + check precoce
+
+| OOM GPU
+| `CUDA out of memory`
+| Reduire `MAX_SAMPLES`, ajuster `BATCH_SIZE`
+
+| Dependance manquante
+| `ModuleNotFoundError`
+| Ajouter package dans cellule d'installation
+
+| Timeout reseau
+| `ConnectionError`
+| Ajouter retry + delai
+
+| Syntaxe PlantUML
+| Texte hors `@startuml/@enduml`
+| Ajuster prompt systeme + temperature
+
+| Conversion GGUF
+| `convert_hf_to_gguf.py` erreur
+| Verifier compatibilite, proposer fallback
+|===
+
+== EPIC 6 : Modelisation Historique CSV
+
+**Statut** : A FAIRE
+**Priorite** : P2
+
+*Pourquoi* : L'accumulation de CSV dans Git forme une serie temporelle. A terme,
+on peut predire les durees, les echecs, et la degradation GPU avant de lancer
+un run.
+
+=== Sous-taches
+
+* [ ] Implemeter `TimeSeriesModeler` :
+  - Agregation multi-CSV (`logs/colab/*.csv`)
+  - Regression duree par phase (RandomForest, LinearRegression)
+  - Detection de tendance (LinRegress pente/semaine)
+  - Classification probabilite d'echec (phase, heure, jour, samples)
+* [ ] Tache Gradle `modelColabLogs` :
+  - Entraine sur l'historique CSV
+  - Sort un rapport : duree predite, risque d'echec, fenetre optimale
+* [ ] Tests : validation croisee, metriques (MAE, precision, rappel)
+* [ ] Documentation : schema des colonnes, exemples de modelisation
+
+=== Exemples de modelisation
+
+*Prediction de duree* : "Ce run prendra ~45 min, evite vendredi soir"
+*Detection de degradation GPU* : "Les T4 ralentissent de 12s/semaine le vendredi"
+*Risque d'echec* : "Phase GGUF a 78% de probabilite d'echec si > 5000 samples"
+
+== EPIC 7 : Strategie de Prototypage Progressif
+
+**Statut** : A FAIRE
+**Priorite** : P2 (documentation seulement)
+
+*Pourquoi* : Le plugin n'est pas juste un outil technique — il incarne une
+methodologie. Ne pas tenter de gros modeles avant d'avoir rode le pipeline sur
+des petits.
+
+=== Niveaux de maturite
+
+[cols="1,3,3"]
+|===
+| Niveau | Modele | Pipeline
+
+| 0 — Artisanal
+| Petit (E2B/E4B)
+| Notebook manuel, pas de logs
+
+| 1 — Instrumente
+| Petit
+| gspread → Sheets, logs structures
+
+| 2 — Automatise
+| Petit
+| GAS + Actions, detection auto
+
+| 3 — Auto-correctif
+| Petit
+| IA corrige, push + Drive
+
+| 4 — Predictif
+| Moyen
+| CSV → modeles de prediction
+
+| 5 — Industrialise
+| Gros
+| Scaling vertical, multi-GPU, multi-cloud
+|===
+
+=== Sous-taches
+
+* [ ] Rediger `docs/METHODOLOGIE.adoc` decrivant les 6 niveaux
+* [ ] Ajouter un check pre-run : le niveau actuel est-il suffisant pour le
+  modele cible ?
+* [ ] Template de rapport de maturite (auto-genere depuis les CSV)
+
+== Backlog Transverse
+
+|===
+| EPIC | Description | Statut | Priorite
+
+| EPIC 1
+| Planification et initialisation
+| EN COURS
+| P0
+
+| EPIC 2
+| Logger automatique Colab → Sheets
+| A FAIRE
+| P0
+
+| EPIC 3
+| Deploiement script GAS
+| A FAIRE
+| P0
+
+| EPIC 4
+| CI/CD — Actions + analyse CSV
+| A FAIRE
+| P1
+
+| EPIC 5
+| Correction IA notebook
+| A FAIRE
+| P1
+
+| EPIC 6
+| Modelisation historique CSV
+| A FAIRE
+| P2
+
+| EPIC 7
+| Strategie prototypage progressif
+| A FAIRE
+| P2
+|===
