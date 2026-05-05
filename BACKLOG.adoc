@@ -3,7 +3,7 @@
 
 == EPIC 1 : Planification et initialisation
 
-**Statut** : EN COURS
+**Statut** : TERMINE
 **Priorite** : P0
 
 *Pourquoi* : Sans planification, le plugin naît sans direction. L'EPIC 1 fixe le
@@ -252,6 +252,99 @@ des petits.
   modele cible ?
 * [ ] Template de rapport de maturite (auto-genere depuis les CSV)
 
+== EPIC 8 : Dashboard Spreadsheet → CI event → CD response
+
+**Statut** : A FAIRE
+**Priorite** : P0
+
+*Pourquoi* : Le sens de la suite. Le spreadsheet n'est pas un dump passif —
+c'est un dashboard operationnel. Une cellule modifiee = un evenement CI.
+Un evenement CI = une tache Gradle. Une tache Gradle = une reponse CD
+(notebook corrige, modele redeploye, alerte envoyee). La boucle est fermee
+du spreadsheet au produit final.
+
+=== POC — Dashboard minimum viable
+
+Avant d'ecrire une ligne de plugin, on valide le concept avec un POC
+manuel :
+
+. *Dashboard Sheet* — une feuille dediee avec :
+  - Dernier statut par notebook (OK / ERROR / RUNNING)
+  - Derniere duree par phase
+  - Compteur d'erreurs depuis le dernier succes
+  - Cellule `TRIGGER_FIX` (bool) — mise a `TRUE` manuellement ou par GAS
+. *Event CI* — un check GAS ou un poll cron qui lit `TRIGGER_FIX`
+. *Response CD* — si `TRUE` :
+  - `git checkout -b fix/auto-{timestamp}`
+  - La tache Gradle corrige le notebook
+  - `git push` + PR
+  - Reset `TRIGGER_FIX` a `FALSE` + log dans Sheets
+
+[plantuml]
+----
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+rectangle "Dashboard\nSpreadsheet" as dash #LightYellow {
+  rectangle "Status: ERROR" as status
+  rectangle "TRIGGER_FIX: TRUE" as trigger
+}
+
+rectangle "GAS Timer" as gas
+rectangle "GitHub Actions" as ci
+rectangle "Plugin Gradle" as gradle
+rectangle "Repo Git" as repo
+rectangle "Google Drive" as drive
+
+dash -> gas : poll 5min
+gas -> ci : API dispatch\n(workflow_dispatch)
+ci -> gradle : analyzeColabLogs\n+ correctNotebookViaIA
+gradle -> repo : push fix branch
+gradle -> drive : update notebook
+gradle -> dash : reset TRIGGER_FIX\n+ log resolution
+@enduml
+----
+
+=== Sous-taches
+
+* [ ] *POC manuel* :
+  - Creer le spreadsheet dashboard avec les colonnes/statuts ci-dessus
+  - Ecrire un script GAS minimal qui lit `TRIGGER_FIX` et pingue une URL
+  - Valider que le cycle complet fonctionne une fois a la main
+* [ ] *Automatisation GAS* :
+  - Fonction `checkDashboard()` qui scanne les statuts
+  - Declaration du trigger temporel
+  - Logger les decisions dans une feuille `audit_log`
+* [ ] *Integration CI/CD* :
+  - Workflow GitHub Actions declenche par `workflow_dispatch` (depuis GAS)
+  - La tache Gradle recoit le notebook ID en parametre
+* [ ] *Boucle de feedback* :
+  - Apres correction, le plugin ecrit le resultat dans Sheets
+  - Reset de `TRIGGER_FIX`
+  - Notification (email, Slack, Discord) si succes ou echec
+* [ ] *Documentation* :
+  - Schema du dashboard (colonnes, formules, format conditionnel)
+  - Guide de deploiement du GAS + trigger
+  - Exemple complet de cycle : Colab crash → dashboard rouge → TRIGGER →
+    correction → dashboard vert
+
+=== Criteres d'acceptation
+
+- [ ] Un spreadsheet avec statuts de notebooks mis a jour automatiquement
+- [ ] Une cellule `TRIGGER_FIX` qui, mise a `TRUE` (manuel ou GAS), declenche
+  le pipeline CI/correction
+- [ ] Le notebook corrige apparait dans Drive et sur une branche Git
+- [ ] Le dashboard repasse au vert apres correction
+- [ ] Le cycle complet est documente et reproductible
+
+=== Pourquoi c'est P0 maintenant
+
+Le dashboard spreadsheet est le chainon manquant entre "on loggue dans Sheets"
+et "on fait du CI/CD piloté par les données". C'est le MVP du pipeline
+d'observabilité en boucle fermée. Sans lui, les logs sont juste des logs.
+Avec lui, les logs deviennent des commandes.
+
 == Backlog Transverse
 
 |===
@@ -291,4 +384,9 @@ des petits.
 | Strategie prototypage progressif
 | A FAIRE
 | P2
+
+| EPIC 8
+| Dashboard Spreadsheet → CI event → CD response
+| A FAIRE
+| P0 🔴
 |===
