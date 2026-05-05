@@ -9,4 +9,10 @@
 | init (planif)
 | Planification et initialisation notebook-gradle
 | ✅
+
+| 002
+| 2026-05-05
+| architecture
+| Point Charniere design-time/runtime + EPIC 8 Dashboard CI/CD
+| ✅
 |===

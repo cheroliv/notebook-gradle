@@ -5,8 +5,8 @@ _Regles absolues_ : voir `AGENT.adoc`
 _Ontologie spatiale_ : voir `configuration/.agents/AGENT_GOVERNANCE.adoc`
 
 _Derniere mise a jour_ : 2026-05-05
-_Session en cours_ : 2 — EPIC 2 : Logger automatique Colab → Sheets
-_Session terminee_ : 001 (planification)
+_Session en cours_ : 3 — EPIC 8 POC : Dashboard Spreadsheet
+_Sessions terminees_ : 001 (planification), 002 (point charniere)
 
 '''
 == REGLES ABSOLUES (resume)
@@ -23,6 +23,7 @@ _Session terminee_ : 001 (planification)
 |===
 | # | Date | Type | Sujet | Score
 | 001 | 2026-05-05 | init (planif) | Planification et initialisation notebook-gradle | ✅
+| 002 | 2026-05-05 | architecture | Point Charniere design-time/runtime + EPIC 8 Dashboard CI/CD | ✅
 |===
 
 '''
@@ -31,6 +32,7 @@ _Session terminee_ : 001 (planification)
 |===
 | EPIC | Description | Statut | Priorite
 | EPIC 1 | Planification et initialisation | TERMINE | P0
+| EPIC 8 | Dashboard Spreadsheet → CI event → CD response | EN COURS | P0
 | EPIC 2 | Logger automatique Colab → Sheets | A FAIRE | P0
 | EPIC 3 | Deploiement script GAS | A FAIRE | P0
 | EPIC 4 | CI/CD — Actions + analyse CSV | A FAIRE | P1

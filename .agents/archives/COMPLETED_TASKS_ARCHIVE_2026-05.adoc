@@ -11,6 +11,12 @@ _Session 1 — 2026-05-05 — Planification et initialisation_
 * [x] settings.gradle.kts + build.gradle.kts minimal
 * [x] Ajout notebook-gradle au portefeuille transverse codebase-gradle
 * [x] Creation repo GitHub + push initial
-* [x] Archive session 001 creee
-* [x] SESSIONS_HISTORY.adoc initialise
-* [x] TEST_COVERAGE_ANALYSIS.adoc initialise
+
+_Session 2 — 2026-05-05 — Point Charniere + Dashboard CI/CD_
+
+* [x] Section Point Charniere dans observabilite_colab_cicd.adoc
+  (design-time vs runtime, 5 pitfalls, 5 niveaux)
+* [x] EPIC 1 : EN COURS → TERMINE
+* [x] EPIC 8 : Dashboard Spreadsheet → CI event → CD response (P0)
+* [x] EPIC 8 POC minimum viable defini (sous-taches, criteres)
+* [x] Push office + notebook-gradle + codebase-gradle

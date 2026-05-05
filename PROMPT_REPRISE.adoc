@@ -1,40 +1,47 @@
-= PROMPT_REPRISE — Notebook Gradle — Session 2
+= PROMPT_REPRISE — Notebook Gradle — Session 3
 
-> **Statut** : Session 1 ✅ — Planification terminee, repo cree
-> **Mission** : Implemeter EPIC 2 — Logger Automatique Colab → Sheets
-
-'''
-== Session 1 — Resume
-
-**Date** : 2026-05-05
-**Resultat** : ✅ Structure projet creee, gouvernance agent en place, BACKLOG
-(7 EPICs) redige, repo GitHub initialise. Pipeline d'observabilite documente
-dans office/pilotage/observabilite_colab_cicd.adoc.
-
-**Archive** : `.agents/sessions/001-planification-initialisation.adoc`
+> **Statut** : Session 2 ✅ — Point Charniere documente, EPIC 8 Dashboard backlogge
+> **Mission** : POC Dashboard Spreadsheet — valider le concept avant le code
 
 '''
-== Session 2 — Priorites
+== Sessions 1-2 — Resume
+
+**Session 1** : ✅ Structure projet, gouvernance agent, BACKLOG 7 EPICs
+**Session 2** : ✅ Point Charniere design-time/runtime, 5 pitfalls, EPIC 8
+Dashboard CI/CD ajoute au backlog
+
+**Archives** :
+- `.agents/sessions/001-planification-initialisation.adoc`
+- `.agents/sessions/002-point-charniere-dashboard-cicd.adoc`
+
+'''
+== Session 3 — Priorites
 
 === Objectif principal
 
-**EPIC 2 — Implemeter le Logging Automatique Colab → Sheets**
+**EPIC 8 POC — Dashboard Spreadsheet operationnel**
 
-- Implemeter `NotebookLoggingPlugin` :
-  - Extension `notebook { spreadsheetId, sheetName, autoInstrument }`
-  - `LoggingInjector` : parser notebook JSON, wrapper try/except,
-    injecter cellules de log gspread
-  - Template de cellule de log standard
-- Tache `instrumentNotebook` : .ipynb → .ipynb instrumente
-- Tests : validation nbformat, injection correcte
+Creer le spreadsheet POC manuellement avant d'ecrire du plugin :
+
+- Structure du dashboard :
+  - Colonnes : notebook_id, status, last_run, last_phase, last_duration, error_count, trigger_fix
+  - Format conditionnel : vert/jaune/rouge selon status
+  - Formules : compteur d'erreurs, duree depuis dernier OK
+- Script GAS minimal :
+  - `checkDashboard()` : lit `trigger_fix`
+  - Si TRUE → log dans `audit_log` + reset → ping HTTP (webhook de test)
+- Valider le cycle manuellement :
+  - Modifier `trigger_fix` a TRUE
+  - Verifier que GAS le detecte
+  - Verifier que le webhook recoit le ping
 
 === Criteres d'Acceptation
 
-- [ ] Extension `notebook { }` fonctionnelle dans build.gradle.kts
-- [ ] `instrumentNotebook` transforme un notebook vierge en notebook
-  instrumente (auth + log_step + try/except)
-- [ ] Tests unitaires : injection, nbformat validation
-- [ ] README.adoc expliquant l'usage
+- [ ] Spreadsheet dashboard avec format conditionnel operationnel
+- [ ] GAS detecte `trigger_fix = TRUE` et loggue dans `audit_log`
+- [ ] GAS reset `trigger_fix` a FALSE apres action
+- [ ] Webhook de test recoit le ping
+- [ ] Documentation du POC dans `docs/DASHBOARD_POC.adoc`
 
 '''
 == Couverture Tests
@@ -44,6 +51,7 @@ dans office/pilotage/observabilite_colab_cicd.adoc.
 | Plugin apply + extension | ❌
 | LoggingInjector | ❌
 | instrumentNotebook task | ❌
+| Dashboard POC | ❌
 |===
 
 '''
@@ -53,4 +61,4 @@ dans office/pilotage/observabilite_colab_cicd.adoc.
 - ❌ Pas de tests en fin de session
 - ✅ Procedure de fin de session 6 etapes obligatoires
 - ✅ Pattern Baby-Step : max 3 pts par US
-- ✅ publishToMavenLocal apres chaque modif du code source
+- ✅ POC avant code : valider le concept a la main d'abord

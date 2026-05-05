@@ -1,0 +1,37 @@
+= Session 002 — Point Charnière + Dashboard CI/CD — Notebook Gradle
+
+== Contexte
+
+Deuxieme session du projet notebook-gradle. L'objectif etait de documenter
+les decisions architecturales critiques et de definir la prochaine etape
+concrete : le dashboard spreadsheet comme cockpit operationnel.
+
+Cette session a clarifie la frontiere entre opencode (outil de conception)
+et le pipeline (production autonome).
+
+== Actions
+
+1. Redaction de la section "Point Charniere" dans
+   `office/pilotage/observabilite_colab_cicd.adoc` :
+   - Separation design-time / runtime
+   - 5 pitfalls documentes
+   - 5 niveaux de composition progressive
+   - Garanties de liberte (swap outil, swap LLM)
+
+2. Mise a jour du BACKLOG notebook-gradle :
+   - EPIC 1 : EN COURS → TERMINE
+   - Nouvel EPIC 8 P0 : Dashboard Spreadsheet → CI event → CD response
+     avec POC minimum viable, sous-taches, criteres d'acceptation
+
+3. Push des 3 repos (office, codebase-gradle, notebook-gradle)
+
+== Lecons
+
+- Le spreadsheet n'est pas un dump passif, c'est un cockpit. Une cellule
+  modifiee = un evenement CI. Une tache Gradle = une reponse CD.
+- Le POC manuel avant l'automatisation est la bonne approche : valider
+  le concept avec un spreadsheet + GAS minimal avant d'ecrire du plugin.
+- opencode est strictement confine au design-time. Le pipeline runtime
+  (Colab → Sheets → GAS → Actions → Gradle) est autonome.
+- La gouvernance agent (AGENT.adoc, sessions, INDEX) est lue par le plugin
+  Gradle en read-only, jamais modifiee par lui.
