@@ -1,0 +1,447 @@
+= Spreadsheet Dashboard — Produit Livré via Colab + Drive : Avantages et Limites
+:toc: left
+:toclevels: 3
+:icons: font
+:docdate: 2026-05-05
+
+// Analyse issue de la session 3 — réflexion sur le dashboard spreadsheet
+// comme interface de pilotage d'un produit livré par Colab + Drive.
+// Pro/Cons pour éclairer la décision avant d'investir dans l'industrialisation.
+
+== Contexte de la Question
+
+=== Le Produit
+
+Edster.cloud vend deux choses liées :
+
+. **Des experts IA** — modèles fine-tunés sur un domaine spécifique
+  (PlantUML, AsciiDoc, ingénierie pédagogique FPA/CDA, etc.)
+. **Le pipeline d'entraînement clé en main** — les tâches Gradle qui orchestrent
+  la formation d'un expert : connexion aux datasets, provisioning des ressources
+  (GPU Colab, stockage Drive, modèles HuggingFace), exécution du fine-tuning,
+  conversion GGUF, publication Ollama Cloud
+
+La livraison finale : un expert opérationnel que le client pilote.
+
+=== Qui fait quoi
+
+- *Edster.cloud* → fournit la config, le pipeline Gradle, les datasets, le
+  provisioning d'infrastructure (tout est versionné, reproductible, automatisé)
+- *Le client* → amène son runtime (son compte Google, son Colab, son Drive,
+  ses credentials HuggingFace/Ollama). Le notebook tourne chez lui
+- *Le dashboard spreadsheet* → cockpit de pilotage de l'expert : lancer
+  un entraînement, suivre sa progression, déclencher une correction,
+  consulter les logs, visualiser les métriques
+
+La question : *est-ce que le spreadsheet est un bon support de pilotage pour ce produit ?*
+
+== Avantages (Pros)
+
+=== Zéro Infrastructure Additionnelle
+
+Le spreadsheet est déjà là — Google Sheets fait partie de la stack (gspread,
+GAS, Drive). Pas de frontend web à construire, pas de base de données à gérer,
+pas de CI/CD pour l'UI.
+
+Tout le pipeline vit déjà dans l'écosystème Google + GitHub.
+
+=== Interface Familière et Universelle
+
+- Pas de courbe d'apprentissage : tout le monde sait lire un tableur
+- Accessible web + mobile (Google Sheets app)
+- Collaboration temps réel intégrée (partage, commentaires, historique)
+- Idéal pour un produit consommé par des non-développeurs (formateurs, ingénieurs
+  pédagogiques, chefs de projet)
+
+=== Logique Métier Intégrée Sans Code
+
+- Formules natifs (`=COUNTIF`, `=AVERAGE`) = requêtes sans back-end
+- Format conditionnel = état visuel immédiat (vert/rouge/jaune)
+- Graphiques Google Sheets = visualisation sans front-end
+- Une cellule = un état, une formule = une métrique, un graphique = un trend
+
+=== Automatisable via GAS
+
+- `SpreadsheetApp` = API native dans Google Apps Script
+- `onEdit` / triggers temporels sans serveur externe
+- `UrlFetchApp` pour appeler GitHub API → CI/CD
+- GAS vit dans le même compte Google que le Drive — pas de secrets à déporter
+
+=== Coût et Maintenance
+
+- Gratuit dans la limite des quotas (5-10 millions de cellules)
+- Pas de versioning côté serveur à maintenir
+- Version history natif de Google Sheets (rollback basique)
+- Export CSV natif → Git → historisation automatique
+
+=== Avantage Décisif : Dashboard Indépendant du Runtime
+
+Le dashboard spreadsheet n'est pas couplé à Colab. N'importe quel runtime
+capable d'écrire dans Google Sheets via `gspread` (ou l'API REST Sheets)
+peut se plugger au pipeline :
+
+- *Colab* — client standard, authentification OAuth intégrée
+- *VM cloud locale* — GPU bare metal, instance AWS/GCP/Azure, RunPod,
+  Paperspace. Script Python → `gspread` → dashboard
+- *HuggingFace Spaces* — notebook ou script → `gspread` → dashboard
+- *Kaggle* — notebook → `gspread` → dashboard
+- *Machine locale* — GPU personnel du formateur, Talaria-OS, poste
+  Linux/Windows avec GPU
+
+La seule interface requise : `append_row(status, phase, duree, erreur)`.
+Le reste du pipeline (GAS détection → GitHub push → Actions → plugin
+Gradle → correction IA) est **totalement agnostique** à l'infrastructure
+d'exécution.
+
+Cela signifie :
+- Un formateur démarre sur Colab gratuit, migre vers un GPU local quand
+  il se professionnalise — le dashboard reste le même
+- Un centre de formation plugge son propre serveur GPU au dashboard
+  sans changer une ligne de pipeline
+- Le dashboard devient l'interface unifiée de pilotage quel que soit
+  le runtime, ce qui renforce encore sa position de cockpit définitif
+
+== Limites (Cons)
+
+=== GAS comme SPOF et Goulot d'Étranglement
+
+- Le timer GAS n'est pas temps réel — 10 minutes entre chaque poll
+- `UrlFetchApp` a des quotas stricts (20 000 appels/jour sur compte gratuit)
+- Pas de file d'attente, pas de retry natif sur échec réseau
+- Si le timer est déclenché avec retard ou est skip, aucune garantie de rattrapage
+- GAS est instable en volume : scripts longs, réponses volumineuses = timeout
+
+=== Pas de Gestion de Concurrence
+
+- Cellule `TRIGGER_FIX` booléenne → un seul notebook peut être traité à la fois
+- Si 3 notebooks crashent simultanément, les 2 autres attendent sans visibilité
+- Pas de priorisation des événements (quel crash est le plus critique ?)
+- Pas de mécanisme de lock distribué natif dans Sheets
+
+=== Pas de SLA ni de Résilience
+
+- Pas de mécanisme de heartbeat (comment savoir si le pipeline est vivant ?)
+- Si GAS ou Sheets est down → cockpit mort, aucun fallback
+- Pas de reprise sur échec du pipeline lui-même (que faire si le `workflow_dispatch` échoue ?)
+- Dépendance totale à Google — indisponibilité = produit inerte
+
+=== UX Non Conçue pour le Monitoring Temps Réel
+
+- Le spreadsheet ne se rafraîchit pas automatiquement — F5 manuel
+- Pas de notifications push natives sur changement de cellule
+- Pas d'alertes (sonores, visuelles, email) sans code GAS supplémentaire
+- Pas de dark mode, pas de responsive design, pas de filtrage temps réel
+- L'information est dense et statique — un dashboard dédié (Grafana, Bootstrap)
+  offrirait une bien meilleure UX pour le monitoring
+
+=== Audit et Traçabilité Faibles
+
+- L'historique de versions Google Sheets n'est pas un audit log sérieux
+  (pas de signature, pas de commit hash, pas d'immutabilité)
+- Qui a mis `TRIGGER_FIX = TRUE` ? Difficile à tracer finement
+- Export CSV dans Git résout partiellement le problème
+- Une table `audit_log` dans une feuille dédiée dépend du bon fonctionnement de GAS
+
+=== Scalabilité Limitée
+
+- 5 à 10 millions de cellules max — au-delà, le spreadsheet est inutilisable
+- Volume de CSV bruts dans Git → le repo grossit (solution : rotation, archive)
+- Pas de pagination, pas de partitionnement natif
+- Un seul spreadsheet ne scale pas à des dizaines de notebooks concurrents
+
+=== Pas de Staging/Production
+
+- Pas d'environnement de test pour le dashboard — tout changement est en live
+- Impossible de déployer une nouvelle version du dashboard et rollback proprement
+- Le spreadsheet = une seule instance partagée entre dev et prod
+
+=== Dépendance Google
+
+- Si Google Sheets change ses API ou ses quotas, le produit est impacté
+- Pas d'auto-hébergement possible (contrairement à un dashboard statique GitHub Pages)
+- La donnée vit chez Google, pas chez l'utilisateur
+
+== Verdict — Rectifié pour le Contexte Edster.cloud
+
+=== Recalibrage
+
+Les limites identifiees (concurrence, scalabilite, staging) s'appliquent a un
+produit horizontal sans contrainte de niche. Le contexte est different ici :
+
+- **Edster.cloud** = SaaS cle en main qui vend des *experts IA* (modeles fine-tunes
+  par domaine) + le *pipeline Gradle de formation* qui orchestre datasets, GPU,
+  fine-tuning, conversion et publication
+- **Niche** = formateurs FPA/CDA, ingenierie pedagogique, contenu certifie Qualiopi
+- **Modele** = Edster.cloud provisionne datasets et ressources via taches Gradle ;
+  le client amene son runtime (Colab, Drive, credentials). Le notebook tourne
+  *chez lui*
+- **Volume** = un spreadsheet par client pilote 5-10 notebooks max, 1 expert
+  entraine a la fois, rythme metier (1 fine-tuning tous les N jours/semaines)
+
+=== Conséquences sur les limites
+
+- *GAS comme SPOF* : acceptable. Le volume d'appels est maîtrisé, les quotas
+  Google suffisent largement pour 5-10 notebooks en polling 5-10 min
+- *Concurrence* : non-problème. Un TRIGGER_FIX booléen couvre 1 événement
+  à la fois ; avec 5 notebooks max, la file implicite (attendre que TRIGGER
+  soit FALSE) est suffisante. Pas besoin de queue distribuée
+- *Scalabilité* : non-cible. 10 millions de cellules = ~10 ans de logging
+  pour 5 notebooks. Le spreadsheet est dimensionné pour la durée de vie
+  du produit dans la niche
+- *Staging/production* : géré par le SaaS. Le dashboard est déployé depuis
+  une config template versionnée dans Git — le spreadsheet utilisateur
+  est une instance de cette config, régénérée si besoin
+- *UX temps réel* : le polling 5-10 min est cohérent avec le rythme métier
+  (fine-tuning = heures, pas secondes ; le formateur ne scrute pas en
+  continu)
+
+=== Ce qui reste pertinent et pourquoi c'est OK
+
+- *Audit/traçabilité* : chaque ligne horodatée + GAS push CSV → Git.
+  C'est suffisant pour la niche (pas d'audit bancaire).
+- *Dépendance Google* : le produit vit dans l'écosystème Google + GitHub.
+  C'est la stack assumée de la niche Edtech/FPA — Google Workspace est
+  la norme dans les centres de formation (Classroom, Drive, Forms).
+
+=== Verdict Final
+
+Pour **Edster.cloud** — SaaS calibré niche FPA/CDA avec configs clé en main :
+
+Le dashboard spreadsheet est **le bon choix**, pas juste un MVP transitoire.
+C'est l'interface native de l'écosystème Google Workspace, la courbe
+d'apprentissage est nulle pour le public cible (formateurs, ingénieurs
+pédagogiques), et le dimensionnement du produit (5-10 notebooks/client)
+élimine les problèmes de scalabilité qui toucheraient un produit horizontal.
+
+Le spreadsheet ne migre pas vers Grafana — il est le cockpit final.
+
+== Boucle TDD Fermée — Clasp comme Terminal de Debug
+
+Le pipeline ne s'arrête pas à la correction IA. La boucle *green-red-refactor*
+est fermée grâce à clasp :
+
+=== Cycle complet
+
+. Notebook Colab loggue → `gspread.append_row()` → Sheets
+. GAS détecte `ERROR` → push CSV vers GitHub → `workflow_dispatch` → Actions
+. Plugin Gradle analyse + corrige → push branche `fix/` → Drive mis à jour
+. **Clasp lit les logs distants** → `clasp logs` ou `clasp run` sur une fonction
+   de diagnostic → le développeur voit l'état du système sans ouvrir Sheets
+. Le développeur ouvre une nouvelle session opencode :
+   - `PROMPT_REPRISE.adoc` → mission de la session
+   - `clasp run getStatus` → état actuel du pipeline
+   - `clasp logs` → historique des événements GAS
+. Décision humaine : accepter la correction IA, l'affiner, ou repartir
+   sur une nouvelle approche → commit → nouveau cycle
+
+=== Pourquoi clasp boucle la chaîne
+
+- *Local-first* : pas besoin d'ouvrir Google Sheets pour savoir ce qui se passe.
+  Le terminal suffit.
+- *Assertions distantes* : `clasp run "TestFramework.analyzeCoverage"` valide
+  le pipeline sans déploiement manuel
+- *Aligné opencode* : clasp lit les logs dans le même terminal qu'opencode.
+  Pas de changement de contexte, pas de fenêtre navigateur.
+- *Historique automatique* : chaque `clasp logs` est capturable =
+  traçabilité des sessions de debug
+- *La boucle TDD est complète* : Colab (test run) → GAS (assertion) →
+  clasp (log read) → opencode (refacto) → Gradle (nouveau build) →
+  notebook corrigé relancé
+
+== Bootstrap Multi-User — Premier Bus de Dev Assisté par IA en CI/CD
+
+C'est avec cette boucle clasp + opencode qu'on bootstrap le premier bus de
+développement assisté par IA en CI/CD *multi-utilisateur*.
+
+=== V0 — Simple, sans pool
+
+Le design initial est le plus simple : un seul repo, un seul token, pas
+d'infrastructure de distribution.
+
+[plantuml]
+----
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+rectangle "Dashboard\nSpreadsheet" as dash #LightYellow {
+  rectangle "User A: TRIGGER=TRUE" as ua
+  rectangle "User B: TRIGGER=TRUE" as ub
+}
+
+rectangle "GAS\n(séquentiel)" as gas
+rectangle "Repo Unique\n(1 token, 1 CI)" as repo
+
+dash -> gas : clasp poll\n2 TRIGGER
+gas -> repo : User A → workflow_dispatch
+repo -> repo : CI/CD run User A
+repo -> dash : resultat User A
+gas -> repo : User B → workflow_dispatch
+repo -> repo : CI/CD run User B
+repo -> dash : resultat User B
+@enduml
+----
+
+- *1 seul token GitHub* — pas de pool à gérer, pas de rotation, pas de
+  health check
+- *Traitement séquentiel* — le GAS traite `TRIGGER_FIX` un par un.
+  Le second attend que le premier ait libéré le CI/CD
+- *Simple, direct, zero infra* — idéal pour 2-3 utilisateurs simultanés
+  et des runs dont la durée est compatible avec l'attente (fine-tuning
+  = heures = l'attente est naturelle dans le rythme métier)
+- *Pas de merge-back complexe* — tout se passe dans le même repo
+
+Ce design V0 couvre le MVP multi-user de la niche Edster.cloud sans
+complexité superflue. Le pool de clés API vient plus tard, si le
+volume l'exige.
+
+=== Évolution — Pool de clés API + Fan-Out (si besoin de scaling)
+
+Si le nombre d'utilisateurs ou la fréquence des runs dépasse ce que le
+séquentiel peut absorber, le système évolue vers un pool de clés :
+
+- **Pool de clés API** : N tokens GitHub (1 par clone). Rotation si quota
+- **Fan-Out** : dispatche vers un clone libre → CI/CD déporté
+- **Fan-In** : résultat poussé sur `output/{task-id}` du repo original
+- **Libération** : clé remise dans le pool, clone nettoyé
+
+[plantuml]
+----
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+rectangle "Dashboard\nSpreadsheet" as dash #LightYellow
+rectangle "GAS Dispatcher\n+ Pool Manager" as dispatcher
+rectangle "Keys Pool\n(GITHUB_TOKEN_1..N)" as pool
+rectangle "Clone 1" as c1
+rectangle "Clone 2" as c2
+rectangle "Repo Original" as origin
+
+dash -> dispatcher : clasp poll\nmulti-TRIGGER
+dispatcher -> pool : select free key
+pool --> c1 : assign key 1
+pool --> c2 : assign key 2
+c1 -> origin : push output/{task-id}
+c2 -> origin : push output/{task-id}
+origin -> dash : clasp run getStatus
+@enduml
+----
+
+Mais ceci est une cible N+1. La V0 séquentielle suffit pour démarrer.
+
+== Modèle Économique — Crédits et Double Licence
+
+=== Deux Tiers de Service
+
+[cols="1,3,3"]
+|===
+| Tier | Ce qui est vendu | Ce qui est livré
+| *Facturable* | Génération d'un support spécifique à la demande | Le livrable dans
+Drive ou lien par mail. Le script de création n'est pas fourni.
+La requête est exécutée côté Edster.cloud (Google Cloud API).
+
+| *Open (Apache 2.0)* | Le workspace-engine complet + pipeline Gradle | L'utilisateur
+est maître de son infra et de son code. Il personnalise ses
+supports et tourne sur son propre runtime.
+|===
+
+=== Principe
+
+Le modèle est un *open-core* avec prestations à l'acte :
+
+- L'utilisateur achète des **crédits**
+- Chaque acte ou item n'a pas le même coût en crédits
+  (un fine-tuning expert PlantUML ≠ une slide RevealJS ≠ une capsule vidéo)
+- La génération facturable passe par Edster.cloud → Google Cloud API →
+  livraison dans le Drive client ou par lien mail
+- Le workspace-engine sous licence Apache 2.0 reste librement personnalisable,
+  sans royalties, sans lock-in runtime
+
+=== Exemples de tarification par crédits
+
+[cols="1,1,2"]
+|===
+| Acte | Crédits | Détail
+| Génération slide RevealJS | 1 | AsciiDoc → RevealJS via Gradle
+| Génération formulaire Google Forms | 2 | Prompt → JSON → Form auto-créé
+| Génération diagramme PlantUML | 1 | Texte → PlantUML → PNG/SVG
+| Capsule vidéo pédagogique | 5 | Slides + TTS + ffmpeg → MP4
+| Fine-tuning expert domaine | 10 | Dataset → Fine-tune → GGUF → Ollama Cloud
+| Correction IA notebook | 1 | Analyse logs → LLM → notebook corrigé
+|===
+
+=== Pourquoi ce modèle fonctionne avec le dashboard
+
+- Le dashboard spreadsheet affiche le solde de crédits, l'historique
+  de consommation, les items facturables disponibles
+- Une cellule = un déclencheur d'achat possible : "Générer X → coûte N crédits"
+- Le même cockpit qui pilote l'expert pilote aussi le portefeuille
+- Transparent pour le client : il voit ce qu'il consomme et ce qui reste
+
+== Gouvernance Vivante — Le Spreadsheet comme Politique Physique
+
+Le spreadsheet n'est pas qu'une interface de monitoring. Couplé à Git,
+il devient l'**implantation physique de la gouvernance** du projet :
+
+=== Ségrégation Opinion / Vision / Stratégie
+
+La structure multi-dimensionnelle du spreadsheet incarne la hiérarchie
+de gouvernance :
+
+- **Une cellule** = *opinion* — un fait atomique, une métrique, un statut.
+  C'est l'unité la plus fine de vérité : `ERROR` en B12, `TRUE` en G5
+- **Une feuille** = *vision* — une collection thématique cohérente.
+  `Dashboard` = vision opérationnelle, `tree` = vision du plan IA,
+  `prompt_history` = vision de l'apprentissage, `audit_log` = vision
+  de la traçabilité
+- **Le spreadsheet** = *stratégie* — l'orchestration multi-dimensionnelle
+  de toutes les feuilles, reliées par formules inter-feuilles
+  (`=Dashboard!A2 & " erreur: " & tree!B3`)
+- **Les onglets** = ségrégation temporelle — V1, V2, V3 cohabitent
+  sans s'écraser, chaque version est une hypothèse de gouvernance
+  testée en parallèle
+
+=== Git comme Dépositaire de Vérité — Le Spreadsheet s'y Plugge en CRUD
+
+Le spreadsheet n'est **pas le dépositaire** — il est volatil, périssable,
+éphémère par nature. Le dépôt Git est la **source de vérité dans la durée** :
+
+- Le spreadsheet se plugge sur Git — il y lit son état et y écrit ses
+  snapshots (CSV logs, exports de feuilles, templates GAS)
+- À chaque poll GAS, un CSV est poussé dans `logs/colab/` → ce snapshot
+  devient immuable. C'est la seule trace qui survit au temps
+- Le spreadsheet peut être détruit, corrompu, écrasé — les CSV dans Git
+  restent. On peut régénérer un cockpit entier depuis l'historique Git
+- Le `clasp pull/push` n'est pas la ratification d'une vérité absolue —
+  c'est la capacité de *rejouer* un état : déployer une version du
+  dashboard, la tester, la jeter, en déployer une autre
+- Le spreadsheet est l'**interface vivante** du dépositaire Git — il
+  CRUD (Create, Read, Update, Delete) des cellules, mais ce qui survit
+  au temps est le commit, pas la cellule
+
+Dans l'instant : le spreadsheet est l'interface de pilotage.
+Dans le temps : Git est le seul dépositaire de vérité.
+
+=== Le Dashboard Pilote la Politique par le Mouvement
+
+Contrairement aux fichiers `.adoc` statiques, le spreadsheet a la
+capacité de **représenter le mouvement** :
+
+- Une cellule qui passe de `ERROR` à `OK` = une décision de gouvernance
+  exécutée et vérifiée
+- Un `TRIGGER_FIX` qui bascule = un événement politique (action corrective
+  lancée)
+- Un onglet V2 qui émerge à côté de V1 = une proposition de nouvelle
+  politique, testable sans casser l'existante
+- Le format conditionnel (vert/rouge/jaune) = jugement visuel immédiat
+  sur l'état de la gouvernance — pas besoin de lire un rapport
+- Le `clasp logs` = la capacité de voir le mouvement dans le temps
+  sans même ouvrir le spreadsheet
+
+Le `.agents/` en ADOC était le **rendu statique** de la gouvernance.
+Le spreadsheet en est la **version vivante** — requêtable, interactive,
+évolutive, et lockée par Git.
+
+Le dashboard ne pilote pas que l'expert. Il pilote la gouvernance
+elle-même.

@@ -1,0 +1,269 @@
+= ARCHITECTURE — Notebook Gradle : Pipeline de Recrutement d'Experts par TDD IA
+:toc: left
+:toclevels: 4
+:icons: font
+:docdate: 2026-05-05
+:numbered:
+
+// Document d'architecture synthétique du produit notebook-gradle.
+// Vue d'ensemble complète : composants, flux, responsabilités, décisions.
+// Source unique de vérité pour l'architecture du pipeline.
+//
+// Références :
+// - office/pilotage/notebook-gradle.adoc (document de pilotage)
+// - office/pilotage/carte_mentale_observabilite_colab.adoc (concepts)
+// - notebook-gradle/spreadsheet.adoc (analyse dashboard)
+// - notebook-gradle/BACKLOG.adoc (EPICs)
+
+== Vision
+
+**Edster.cloud provisionne une unité de forge multicanaux assistée par IA,
+évolutive.**
+
+- **Forge** — un atelier complet de création logicielle : code source, pipeline
+  CI/CD, gouvernance, dashboard, templates, datasets
+- **Multicanaux** — n'importe quel runtime (Colab, VM, Kaggle, GPU local),
+  n'importe quel LLM (Ollama 14B local, DeepSeek, Claude, Gemini API),
+  n'importe quel format de sortie (notebook corrigé, modèle GGUF, slide
+  RevealJS, formulaire Forms, diagramme PlantUML, capsule vidéo)
+- **Assistée par IA** — la forge n'est pas passive. Elle lit les logs,
+  raffine ses prompts, propose des corrections, fait évoluer son propre
+  cockpit. La boucle TDD est machine → machine → machine, l'humain pilote
+- **Évolutive** — le dashboard s'auto-adapte (onglets V1, V2, V3...),
+  le GAS se met à jour, l'arbre de prompts s'affine. La forge apprend
+  de ses propres patterns d'erreur
+- **Clonable** — `git clone`. Tout est versionné dans Git (code, config,
+  dashboard, historique). La forge est un dépôt. Un dépôt est une forge.
+  Fork = nouvelle unité de production indépendante
+- **Open Source (Apache 2.0)** — le workspace-engine est libre. L'utilisateur
+  clone, personnalise, est maître de son infra. Edster.cloud vend les
+  *générations à l'acte* (crédits), pas la forge elle-même
+
+Concrètement, le produit notebook-gradle est la **première brique de cette
+forge** : le recrutement d'expert par TDD IA piloté depuis le cockpit
+spreadsheet.
+
+== Vue d'Ensemble
+
+[plantuml]
+----
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+package "Runtime Client\n(Colab, VM, Kaggle...)" as client #LightGreen {
+  rectangle "Notebook Expert\n(fine-tuning, generation)" as nb
+  rectangle "gspread\n(log_step)" as gspread
+}
+
+package "Cockpit\n(Google Sheets)" as cockpit #LightYellow {
+  rectangle "Dashboard\n(onglet = version)" as dash
+  rectangle "prompt_history" as ph
+  rectangle "Arbre de prompts\n(feuille tree)" as tree
+  rectangle "audit_log" as audit
+}
+
+package "Pont CI/CD" as bridge {
+  rectangle "GAS\n(SpreadsheetApp)\ndetecte + dispatche" as gas
+  rectangle "Repo Git\n(persistance)" as repo
+  rectangle "GitHub Actions\nDocker + Ollama" as ci
+}
+
+package "Orchestrateur IA\n(Plugin Gradle)" as orchestrator #Blue {
+  rectangle "LangChain4j\nLangGraph4j" as lc
+  rectangle "14B Ollama\n(decideur local)" as small
+}
+
+cloud "DeepSeek / Claude\n(gros modele API)" as bigmodel
+
+nb -> gspread : log_step(status, duration, error)
+gspread -> cockpit : append_row()
+cockpit -> gas : SpreadsheetApp\npoll TRIGGER_FIX
+gas -> repo : UrlFetchApp\npush CSV + dispatch
+repo -> ci : workflow_dispatch
+ci -> orchestrator : ./gradlew executePromptTree
+lc -> tree : lit arbre
+lc -> small : "quelle feuille ?"
+small -> lc : decision
+lc -> bigmodel : prompt lourd
+bigmodel -> lc : generation
+lc -> cockpit : resultats + reset
+client ..> client : reload notebook\n→ nouveau cycle
+@enduml
+----
+
+== Composants et Responsabilités
+
+=== Runtime Client
+
+Exécute le notebook expert (fine-tuning, génération PlantUML/AsciiDoc, conversion GGUF).
+Seule obligation : appeler `log_step()` → `gspread.append_row()` dans le spreadsheet cockpit.
+
+Runtimes supportés : Colab, VM cloud, Kaggle, HuggingFace Spaces, GPU local, poste Talaria-OS.
+
+=== Cockpit (Google Sheets)
+
+Interface unique de pilotage. Un onglet = une version du dashboard.
+Feuilles : `Dashboard` (état, TRIGGER_FIX, format conditionnel),
+`prompt_history` (prompts IA + réponses + scores),
+`tree` (arbre de prompts),
+`audit_log` (traçabilité).
+
+Le cockpit est déployé et mis à jour via `clasp push` depuis les templates
+versionnés dans Git (`templates/gas/`).
+
+=== GAS (Google Apps Script)
+
+Pont Sheets ↔ GitHub. Zéro intelligence. Responsabilités :
+- Timer 5-10 min → `checkDashboard()` → lit `TRIGGER_FIX`
+- `pushCsvToGitHub()` → export CSV → API GitHub
+- `workflow_dispatch` → déclenche le CI/CD
+
+Accès natif à `SpreadsheetApp`, pas de parsing de fichiers.
+
+=== Dépôt Git
+
+Persistance unique de tout le système :
+[cols="1,2"]
+|===
+| Chemin | Contenu
+| `src/main/kotlin/` | Plugin Gradle (extension, tasks)
+| `templates/gas/` | Scripts GAS versionnés
+| `templates/notebook/` | Cellules de log à injecter
+| `logs/colab/*.csv` | Logs bruts d'observabilité
+| `notebooks/*.ipynb` | Notebooks experts
+| `.agents/` | Gouvernance agent (INDEX, sessions, backup)
+|===
+
+=== Orchestrateur IA (Plugin Gradle)
+
+Coeur du produit. Tourne exclusivement en CI/CD (GitHub Actions). Composé de :
+
+. *LangChain4j* — client LLM unifié (Ollama local + API DeepSeek/Claude)
+. *LangGraph4j* — graphe de décision (itération, backtracking, conditions de sortie)
+
+Tâches principales :
+- `instrumentNotebook` — parse `.ipynb`, injecte cellules de log
+- `executePromptTree` — lit l'arbre de prompts, itère décision/génération/évaluation, écrit résultats
+
+=== Ollama 14B (Décideur local)
+
+Modèle léger embarqué dans le Docker CI. Rôle unique : **décider**.
+Lit l'état du dashboard et l'arbre de prompts, répond : "quelle feuille
+traiter, quel paramètre ajuster, quand arrêter".
+
+Ne génère jamais de contenu métier. Tourne en local (inférence gratuite,
+pas de crédits consommés).
+
+=== Gros Modèle API (DeepSeek, Claude, Gemini)
+
+Génération experte lourde. Reçoit les prompts-feuille enrichis (contexte +
+historique + plan). Appelé via LangChain4j → API HTTP standard.
+
+Coût en crédits Edster.cloud.
+
+== Flux — Cycle TDD IA Complet
+
+[plantuml]
+----
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+rectangle "Notebook\nExpert" as nb #LightGreen
+rectangle "Dashboard\nSheets" as sheets #LightYellow
+rectangle "GAS" as gas #LightYellow
+rectangle "Repo Git" as git
+rectangle "GitHub Actions\nDocker + Ollama" as ci
+rectangle "Plugin Gradle\nLangChain4j/LangGraph4j" as gradle #Blue
+rectangle "Ollama 14B\n(decideur)" as small #LightBlue
+cloud "DeepSeek/Claude\n(generateur)" as big
+
+nb -> sheets : log_step(status, error)\ngspread.append_row()
+sheets -> gas : timer poll (5-10 min)\nTRIGGER_FIX = TRUE ?
+gas -> git : UrlFetchApp\npush CSV logs\nworkflow_dispatch
+git -> ci : on.workflow_dispatch
+ci -> gradle : ./gradlew executePromptTree
+gradle -> sheets : Lit arbre de prompts\n(feuille tree)
+gradle -> small : LangChain4j → Ollama\n"quelle feuille traiter ?"
+small -> gradle : decision: feuille X\nparametre Y
+gradle -> big : LangChain4j → API\nprompt-feuille enrichi
+big -> gradle : generation experte
+gradle -> gradle : evaluation score\nnbformat.validate()
+gradle -> git : push fix/{timestamp}
+gradle -> sheets : ecrit resultats\nreset TRIGGER_FIX\nmaj prompt_history
+nb -> nb : reload notebook\nnouveau test → new logs
+
+note right of gradle
+  Cycle decision/generation/evaluation
+  gere par LangGraph4j
+  arbre de prompts traverse
+  jusqu'a convergence
+end note
+@enduml
+----
+
+== Évolution du Cockpit par TDD IA
+
+Le cockpit n'est pas figé. L'IA peut proposer une nouvelle version du dashboard :
+
+. Analyse des logs + `prompt_history`
+. Génération d'un nouveau script GAS (pushé dans `templates/gas/`)
+. Déploiement minimal :
+   - `clasp pull` → récupère le script depuis Git
+   - `clasp push` → déploie sur le spreadsheet
+   - Un **nouvel onglet** est créé (`Dashboard V1`, `Dashboard V2`, ...)
+. Le développeur compare les onglets côte à côte, teste, adopte ou rejette
+. Adopté → l'onglet devient l'actif, les anciens restent en archive
+. Rejeté → feedback → prochaine itération
+
+== Modèle Économique
+
+=== Crédits
+
+- L'utilisateur achète des crédits
+- Chaque acte a un coût différent :
+  - Slide RevealJS : 1 crédit
+  - Diagramme PlantUML : 1 crédit
+  - Formulaire Google Forms : 2 crédits
+  - Correction IA notebook : 1 crédit
+  - Capsule vidéo pédagogique : 5 crédits
+  - Fine-tuning expert domaine : 10 crédits
+
+=== Double Licence
+
+- *Facturable* : génération à la demande via Edster.cloud → Google Cloud API →
+  livraison Drive ou mail. Script de création non fourni
+- *Open (Apache 2.0)* : workspace-engine complet + pipeline Gradle → personnalisable,
+  maître de son infra et runtime
+
+=== Ratio Économique IA
+
+- 90% des appels = 14B Ollama local (gratuit, inférence dans Docker CI)
+- 10% = gros modèle API (crédits Edster.cloud)
+
+== Outils en Terminal
+
+[cols="1,3"]
+|===
+| Outil | Rôle dans le pipeline
+| `opencode` | Design-time : écriture du plugin, brainstorming, vision. Terminal only.
+Pas dans le pipeline runtime
+| `clasp` | Debug temps réel : `clasp logs`, `clasp run getStatus`,
+`clasp pull/push/deploy` pour itérer le GAS et le dashboard
+| `git` | Persistance : tout est versionné, Git state = protocole de communication
+| `./gradlew` | Build + orchestration : `instrumentNotebook`, `executePromptTree`
+|===
+
+La boucle complète (design, debug, build, déploiement) se fait dans un **terminal unique**,
+sans navigateur, sans changer de contexte.
+
+== Références Croisées
+
+- `AGENT.adoc` — directives agent (règles, conventions, procédures)
+- `BACKLOG.adoc` — EPICs priorisés
+- `PROMPT_REPRISE.adoc` — mission session en cours
+- `spreadsheet.adoc` — analyse pro/cons du dashboard
+- `office/pilotage/notebook-gradle.adoc` — document de pilotage
+- `office/pilotage/carte_mentale_observabilite_colab.adoc` — concepts
+- `office/pilotage/expert_plantuml.adoc` — recrutement premier expert

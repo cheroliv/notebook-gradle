@@ -1,0 +1,97 @@
+= Session 003 — Analyse Dashboard Spreadsheet — Notebook Gradle
+
+== Contexte
+
+Troisième session du projet notebook-gradle. Mission définie par PROMPT_REPRISE :
+POC Dashboard Spreadsheet.
+
+La session s'est développée en plusieurs phases :
+
+. Analyse pro/cons du spreadsheet comme UI de pilotage pour un produit Colab + Drive
+. Recalibrage du verdict après clarification du produit Edster.cloud
+. Définition du modèle économique (crédits, double licence)
+. *Point de bascule* — réalisation du vrai produit : recrutement d'expert
+  avec pipeline de refactorisation TDD assisté par IA
+
+== Actions
+
+1. Création de `spreadsheet.adoc` — analyse pro/cons (8 avantages, 8 limites)
+2. Rectification du verdict : spreadsheet = cockpit définitif, pas MVP transitoire
+3. Ajout modèle économique : crédits, tier facturable (génération à la demande
+   sans script) + tier open Apache 2.0 (workspace-engine personnalisable)
+4. Ajout boucle clasp + opencode TDD fermée dans un terminal unique
+5. Ajout bootstrap multi-user V0 (séquentiel sans pool) + évolution N+1 (fan-out)
+6. Création du notebook vierge `office/notebooks/gradle-ci-cd-ai.ipynb`
+7. Création du document de pilotage `office/pilotage/notebook-gradle.adoc`
+8. **Recalibrage complet après réalisation du vrai produit**
+
+== La Réalisation — Le Vrai Produit
+
+Le produit n'est pas le pipeline de logging. C'est :
+
+*Le recrutement d'un expert (fine-tuning) couplé à son pipeline de
+refactorisation de code assisté par IA, piloté par la lecture des logs.*
+
+Chaque action de recrutement déclenche des aller-retours de boucles TDD IA :
+- Le code expert est testé (notebook)
+- Les logs tombent dans le dashboard spreadsheet
+- Le pipeline Gradle lit les logs, construit un prompt LangChain4j enrichi
+  (erreur + code + historique prompt_history + plan)
+- L'IA propose une correction
+- Le code corrigé est relancé → nouveaux logs → nouvelle itération
+- Le prompt est raffiné programmatiquement jusqu'à convergence
+- LangChain4j orchestre le dialogue itératif code ↔ logs ↔ IA
+
+Le pipeline n'est pas linéaire. C'est un dialogue cyclique entre le code,
+les logs et l'IA, où chaque échec affine le prompt via LangChain4j.
+
+Le dashboard spreadsheet reste le cockpit — mais c'est un cockpit de
+recrutement d'expert par TDD IA, pas un simple moniteur de logs.
+
+== Résultat
+
+Fichiers créés/modifiés :
+- `notebook-gradle/spreadsheet.adoc` — analyse dashboard + modèle éco + boucle TDD
+- `office/pilotage/notebook-gradle.adoc` — document de pilotage (vision révisée)
+- `office/notebooks/gradle-ci-cd-ai.ipynb` — notebook vierge prêt à instrumenter
+
+== Leçons
+
+- Le vrai produit émerge en parlant. Ce qui semblait être un pipeline de logs
+  est en réalité un moteur de recrutement d'experts par raffinement TDD IA
+- LangChain4j n'est pas un simple client HTTP — c'est l'orchestrateur
+  du dialogue code ↔ logs ↔ IA, avec raffinement programmatique du prompt
+  entre chaque itération
+- La boucle TDD n'est pas humaine vs machine — c'est machine (logs) →
+  machine (IA) → machine (code corrigé), l'humain pilote le dashboard
+  et valide la convergence
+- **Ollama est le bad citizen** : pas d'API HTTP REST simple comme OpenAI/Claude.
+  Il force l'embarquement du runtime local (process Ollama + modèle chargé)
+  pour toute inférence. Impossible d'appeler Ollama via un simple `UrlFetchApp`
+  depuis GAS ou une API cloud externalisée
+- **Conséquence** : tout le processus IA doit être centralisé dans le plugin
+  Gradle via LangChain4j/LangGraph4j. C'est Gradle qui embarque Ollama
+  (via Docker CI), charge le 14B local, et orchestre l'arbre de prompts
+  en dialoguant avec le modèle local (décision) et le gros modèle API
+  (génération). GAS ne fait que détecter et dispatcher
+- Le dashboard spreadsheet + GAS restent le cockpit, mais l'intelligence
+  est 100% dans Gradle + LangChain4j/LangGraph4j + Docker Ollama. Pas un
+  atome d'IA dans Sheets
+- **Le dépôt Git comme moteur d'évolution** : l'IA peut proposer une nouvelle
+  version du dashboard (GAS + structure Sheets) pushée dans Git, testée via
+  `clasp pull/push/deploy`, adoptée ou rejetée. Le cockpit s'auto-adapte aux
+  patterns d'erreur découverts — TDD IA appliqué au dashboard lui-même
+- **Gouvernance vivante** : le spreadsheet incarne la ségrégation physique
+  opinion (cellule) → vision (feuille) → stratégie (spreadsheet) → temporelle
+  (onglets). La hiérarchie de gouvernance n'est plus dans des fichiers
+  statiques mais dans une structure multidimensionnelle active
+- **Correction critique** : le spreadsheet n'est PAS le dépositaire de
+  vérité. Il est volatil, périssable. Il se plugge sur Git et peut CRUD.
+  Dans l'instant il pilote, dans le temps Git est le seul dépositaire.
+  Les CSV snapshots sont la trace qui survit ; le cockpit peut être
+  régénéré intégralement depuis Git
+- **Synthèse finale — Ce qu'est Edster.cloud** : une unité de forge multicanaux
+  assistée par IA, évolutive, clonable (`git clone`), open source (Apache 2.0).
+  Forge = dépôt Git. Un dépôt = une unité de production autonome. Fork =
+  nouvelle forge. Edster.cloud provisionne la forge ; le notebook-gradle en
+  est la première brique de recrutement d'experts

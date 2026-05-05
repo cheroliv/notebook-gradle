@@ -5,8 +5,8 @@ _Regles absolues_ : voir `AGENT.adoc`
 _Ontologie spatiale_ : voir `configuration/.agents/AGENT_GOVERNANCE.adoc`
 
 _Derniere mise a jour_ : 2026-05-05
-_Session en cours_ : 3 — EPIC 8 POC : Dashboard Spreadsheet
-_Sessions terminees_ : 001 (planification), 002 (point charniere)
+_Session en cours_ : 4 — POC Dashboard : premiere cellule notebook qui loggue
+_Sessions terminees_ : 001 (planification), 002 (point charniere), 003 (analyse + architecture)
 
 '''
 == REGLES ABSOLUES (resume)
@@ -24,6 +24,7 @@ _Sessions terminees_ : 001 (planification), 002 (point charniere)
 | # | Date | Type | Sujet | Score
 | 001 | 2026-05-05 | init (planif) | Planification et initialisation notebook-gradle | ✅
 | 002 | 2026-05-05 | architecture | Point Charniere design-time/runtime + EPIC 8 Dashboard CI/CD | ✅
+| 003 | 2026-05-05 | analyse + architecture | Analyse dashboard, recalibrage produit, modele eco, architecture Docker Ollama + LangChain4j/LangGraph4j | ✅
 |===
 
 '''
@@ -49,6 +50,8 @@ _Sessions terminees_ : 001 (planification), 002 (point charniere)
 | `AGENT.adoc` | Directives completes (cercles de confiance inclus) | EAGER
 | `LAZY_EAGER_ESSENTIALS.adoc` | Principes LAZY/EAGER compacts | EAGER
 | `PROMPT_REPRISE.adoc` | Mission session en cours | EAGER
+| `ARCHITECTURE.adoc` | Synthese architecture produit | LAZY
+| `spreadsheet.adoc` | Analyse pro/cons + modele eco dashboard | LAZY
 | `BACKLOG.adoc` | Suivi prioritaire des taches | LAZY
 | `AGENT_GOVERNANCE.adoc` (dans configuration/) | Gouvernance transverse globale | LAZY
 | `.agents/SESSIONS_HISTORY.adoc` | Historique des sessions | EAGER

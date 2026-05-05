@@ -20,3 +20,19 @@ _Session 2 — 2026-05-05 — Point Charniere + Dashboard CI/CD_
 * [x] EPIC 8 : Dashboard Spreadsheet → CI event → CD response (P0)
 * [x] EPIC 8 POC minimum viable defini (sous-taches, criteres)
 * [x] Push office + notebook-gradle + codebase-gradle
+
+_Session 3 — 2026-05-05 — Analyse Dashboard + Architecture Produit_
+
+* [x] Creation de `spreadsheet.adoc` — analyse pro/cons dashboard (8 avantages, 8 limites)
+* [x] Recalibrage verdict : spreadsheet = cockpit definitif pour niche Edster.cloud
+* [x] Definition modele economique : credits, double licence, grille tarification
+* [x] Clarification produit : recrutement d'expert par TDD IA, pas juste pipeline de logs
+* [x] Architecture d'orchestration : Docker Ollama + 14B decideur + gros modele API
+* [x] Bootstrap multi-user V0 (sequentiel simple) + evolution N+1 (fan-out pool)
+* [x] Evolution cockpit par onglets (Dashboard V1, V2, ...)
+* [x] Boucle TDD IA complete : notebook → logs → LangChain4j/LangGraph4j → IA → correction
+* [x] Depot Git comme moteur d'evolution du dashboard
+* [x] Creation de `ARCHITECTURE.adoc` — synthese architecture complete (252 lignes)
+* [x] Creation de `office/pilotage/notebook-gradle.adoc` — document de pilotage
+* [x] Creation de `office/notebooks/gradle-ci-cd-ai.ipynb` — notebook vierge
+* [x] Archive session 003 + mise a jour PROMPT_REPRISE, SESSIONS_HISTORY, INDEX

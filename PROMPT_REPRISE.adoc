@@ -1,57 +1,59 @@
-= PROMPT_REPRISE — Notebook Gradle — Session 3
+= PROMPT_REPRISE — Notebook Gradle — Session 4
 
-> **Statut** : Session 2 ✅ — Point Charniere documente, EPIC 8 Dashboard backlogge
-> **Mission** : POC Dashboard Spreadsheet — valider le concept avant le code
+> **Statut** : Session 3 ✅ — Architecture documentee, produit clarifie, fichiers initiaux crees
+> **Mission** : POC Dashboard Spreadsheet manuel — premiere cellule notebook qui loggue
 
 '''
-== Sessions 1-2 — Resume
+== Sessions 1-3 — Resume
 
 **Session 1** : ✅ Structure projet, gouvernance agent, BACKLOG 7 EPICs
-**Session 2** : ✅ Point Charniere design-time/runtime, 5 pitfalls, EPIC 8
-Dashboard CI/CD ajoute au backlog
+**Session 2** : ✅ Point Charniere design-time/runtime, 5 pitfalls, EPIC 8 Dashboard CI/CD
+**Session 3** : ✅ Analyse pro/cons dashboard spreadsheet, recalibrage produit (recrutement
+d'expert par TDD IA), modele eco credits, bootstrap multi-user V0 simple, architecture
+Docker Ollama + LangChain4j/LangGraph4j, evolution cockpit par onglets
 
 **Archives** :
 - `.agents/sessions/001-planification-initialisation.adoc`
 - `.agents/sessions/002-point-charniere-dashboard-cicd.adoc`
+- `.agents/sessions/003-dashboard-spreadsheet-analysis.adoc`
+
+**Nouveaux fichiers** :
+- `spreadsheet.adoc` — analyse pro/cons + modele eco
+- `ARCHITECTURE.adoc` — synthese architecture complete
+- `office/pilotage/notebook-gradle.adoc` — document de pilotage
+- `office/notebooks/gradle-ci-cd-ai.ipynb` — notebook vierge
 
 '''
-== Session 3 — Priorites
+== Session 4 — Priorites
 
 === Objectif principal
 
-**EPIC 8 POC — Dashboard Spreadsheet operationnel**
+**EPIC 8 POC — Dashboard Spreadsheet operationnel (suite)**
 
-Creer le spreadsheet POC manuellement avant d'ecrire du plugin :
+Passer du cadrage a l'action : premiere cellule notebook qui loggue dans Sheets.
 
-- Structure du dashboard :
-  - Colonnes : notebook_id, status, last_run, last_phase, last_duration, error_count, trigger_fix
-  - Format conditionnel : vert/jaune/rouge selon status
-  - Formules : compteur d'erreurs, duree depuis dernier OK
-- Script GAS minimal :
-  - `checkDashboard()` : lit `trigger_fix`
-  - Si TRUE → log dans `audit_log` + reset → ping HTTP (webhook de test)
-- Valider le cycle manuellement :
-  - Modifier `trigger_fix` a TRUE
-  - Verifier que GAS le detecte
-  - Verifier que le webhook recoit le ping
+- Ouvrir `office/notebooks/gradle-ci-cd-ai.ipynb` dans Colab
+- Cellule 1 : installer gspread, configurer auth OAuth, connect spreadsheet
+- Cellule 2 : implementer `log_step()` + `gspread.append_row()`
+- Valider que les logs arrivent dans le spreadsheet
 
 === Criteres d'Acceptation
 
-- [ ] Spreadsheet dashboard avec format conditionnel operationnel
-- [ ] GAS detecte `trigger_fix = TRUE` et loggue dans `audit_log`
-- [ ] GAS reset `trigger_fix` a FALSE apres action
-- [ ] Webhook de test recoit le ping
-- [ ] Documentation du POC dans `docs/DASHBOARD_POC.adoc`
+- [ ] Notebook connecte au spreadsheet dashboard via gspread
+- [ ] `log_step(phase, status, duration, error)` ecrit une ligne dans Sheets
+- [ ] Validation manuelle : ouvrir le spreadsheet, verifier que la ligne est la
+- [ ] Pas de code Gradle, pas de GAS, pas de CI/CD — juste le notebook + gspread
 
 '''
 == Couverture Tests
 
 |===
 | Feature | Etat
-| Plugin apply + extension | ❌
-| LoggingInjector | ❌
-| instrumentNotebook task | ❌
-| Dashboard POC | ❌
+| Notebook gspread connecte a Sheets | ❌
+| log_step() ecrit dans Sheets | ❌
+| Dashboard spreadsheet cree (POC manuel) | ❌
+| GAS checkDashboard() | ❌
+| Plugin Gradle + LangChain4j | ❌
 |===
 
 '''
@@ -62,3 +64,4 @@ Creer le spreadsheet POC manuellement avant d'ecrire du plugin :
 - ✅ Procedure de fin de session 6 etapes obligatoires
 - ✅ Pattern Baby-Step : max 3 pts par US
 - ✅ POC avant code : valider le concept a la main d'abord
+- ✅ Niveau 0 avant niveau 1 : notebook qui loggue avant pipeline CI/CD
