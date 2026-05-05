@@ -95,3 +95,18 @@ Fichiers créés/modifiés :
   Forge = dépôt Git. Un dépôt = une unité de production autonome. Fork =
   nouvelle forge. Edster.cloud provisionne la forge ; le notebook-gradle en
   est la première brique de recrutement d'experts
+- **Modèle économique corrigé** : BYOK (Bring Your Own Key) — Edster.cloud ne
+  paie aucun token LLM. Trois tiers : open source (gratuit), provisionnement
+  du dashboard (payant, crédits), actes d'exécution (payant, crédits).
+  Le dashboard lui-même est une requête de création payante
+- **Dialogue CI/CD** : le spreadsheet est une interface de conversation.
+  On parle aux tâches assistées par IA via le CI (TRIGGER_FIX, dispatch,
+  arbre de prompts). Elles répondent par logs (Sheets) et CD (artefacts
+  livrés). Conversation persistante en contexte augmenté tout au long du
+  cycle de vie du runner Docker, héritage du contexte via Git entre runners
+- **Ce qui distingue Edster.cloud** : croisement de l'expérience
+  conversationnelle des assistants (Copilot, Claude Code) et de la diversité
+  des experts recrutables. Une unité de production logicielle distribuée
+  où assistants et experts collaborent via un bus commun (Sheets + Git + CI/CD),
+  sur tous les supports de sortie. L'utilisateur ne code pas plus vite —
+  il recrute une capacité de production qui continue quand il dort

@@ -330,39 +330,53 @@ origin -> dash : clasp run getStatus
 
 Mais ceci est une cible N+1. La V0 séquentielle suffit pour démarrer.
 
-== Modèle Économique — Crédits et Double Licence
+== Modèle Économique — Crédits et Tiers de Service
 
-=== Deux Tiers de Service
+=== Tiers de Service
 
 [cols="1,3,3"]
 |===
-| Tier | Ce qui est vendu | Ce qui est livré
-| *Facturable* | Génération d'un support spécifique à la demande | Le livrable dans
-Drive ou lien par mail. Le script de création n'est pas fourni.
-La requête est exécutée côté Edster.cloud (Google Cloud API).
+| Tier | Ce qui est livré | Modèle
+| *Open Source* | Code source du workspace-engine + pipeline Gradle | Apache 2.0,
+gratuit. L'utilisateur peut tout faire manuellement. C'est la surface d'appel,
+l'entonnoir — pas le produit.
 
-| *Open (Apache 2.0)* | Le workspace-engine complet + pipeline Gradle | L'utilisateur
-est maître de son infra et de son code. Il personnalise ses
-supports et tourne sur son propre runtime.
+| *Provisionnement* | Requête de création du dashboard : déploiement de la forge
+clé en main sur l'espace Google Cloud du client | Payant en crédits.
+C'est l'équivalent d'un `terraform apply` pour Google Workspace.
+La plomberie est installée automatiquement (Sheets configuré,
+GAS déployé, Drive structuré, pipeline CI/CD connecté).
+
+| *Actes à l'exécution* | Requête de génération, fine-tuning, correction IA,
+capsule vidéo... | Payant en crédits. Coût réel = API Google Cloud
++ tokens LLM. Marge Edster.cloud sur le delta crédit - coût réel.
 |===
+
+=== Distinction critique
+
+- *L'open source* donne les briques. Gratuit. L'utilisateur bricole.
+- *Le provisionnement* instancie les briques. Payant. Edster.cloud fait
+  le `terraform apply` sur l'espace Google Cloud du client. Livraison
+  d'un cockpit opérationnel sans que l'utilisateur écrive une ligne de GAS
+- *Les actes* consomment les briques. Payant. Chaque run de fine-tuning,
+  chaque génération de slide, chaque correction IA → crédits débités
 
 === Principe
 
-Le modèle est un *open-core* avec prestations à l'acte :
-
 - L'utilisateur achète des **crédits**
-- Chaque acte ou item n'a pas le même coût en crédits
-  (un fine-tuning expert PlantUML ≠ une slide RevealJS ≠ une capsule vidéo)
-- La génération facturable passe par Edster.cloud → Google Cloud API →
+- Chaque provisionnement et chaque acte n'a pas le même coût
+- Tout ce qui est payant passe par Edster.cloud → Google Cloud API →
   livraison dans le Drive client ou par lien mail
-- Le workspace-engine sous licence Apache 2.0 reste librement personnalisable,
-  sans royalties, sans lock-in runtime
+- Le script de création n'est jamais fourni côté payant
+  (il est dispo en open source Apache 2.0, l'utilisateur peut le lire,
+  le fork, le personnaliser — mais s'il veut le one-click → crédits)
 
 === Exemples de tarification par crédits
 
 [cols="1,1,2"]
 |===
 | Acte | Crédits | Détail
+| Provisionnement dashboard forge | 3 | Déploiement clé en main (Sheets + GAS + CI/CD connecté)
 | Génération slide RevealJS | 1 | AsciiDoc → RevealJS via Gradle
 | Génération formulaire Google Forms | 2 | Prompt → JSON → Form auto-créé
 | Génération diagramme PlantUML | 1 | Texte → PlantUML → PNG/SVG
@@ -375,7 +389,7 @@ Le modèle est un *open-core* avec prestations à l'acte :
 
 - Le dashboard spreadsheet affiche le solde de crédits, l'historique
   de consommation, les items facturables disponibles
-- Une cellule = un déclencheur d'achat possible : "Générer X → coûte N crédits"
+- Une cellule = un déclencheur d'achat possible : "Provisionner X → coûte N crédits"
 - Le même cockpit qui pilote l'expert pilote aussi le portefeuille
 - Transparent pour le client : il voit ce qu'il consomme et ce qui reste
 

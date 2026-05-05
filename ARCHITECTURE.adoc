@@ -43,6 +43,66 @@ Concrètement, le produit notebook-gradle est la **première brique de cette
 forge** : le recrutement d'expert par TDD IA piloté depuis le cockpit
 spreadsheet.
 
+=== Ce qui distingue Edster.cloud d'un simple outil de vibe coding
+
+Se pluguer à Copilot ou Claude Code seul lance une expérience individuelle
+— un développeur, un assistant, une conversation.
+
+Edster.cloud change d'échelle en croisant **deux forces** qui, combinées,
+n'ont pas d'équivalent :
+
+. **L'expérience conversationnelle des assistants** (Copilot, Claude Code,
+   opencode) — la capacité de dialoguer avec l'IA pour concevoir, coder,
+   déboguer, raffiner
+. **La diversité des experts recrutables** — chaque expert est un modèle
+   fine-tuné sur un domaine (PlantUML, AsciiDoc, ingénierie pédagogique,
+   génération de formulaires...). Pas un seul LLM généraliste, mais une
+   armée de spécialistes mobilisables par domaine et par tâche
+
+Ces deux forces, couplées au **pipeline CI/CD conversationnel** (on parle
+aux tâches, elles répondent par logs et livraison CD), forment un
+écosystème de communication complet :
+
+- L'assistant bootstrap le projet, l'expert l'exécute
+- L'assistant réfléchit à l'architecture, l'expert fine-tune le code
+- L'assistant lit les logs et décide, l'expert corrige et déploie
+- Tout le cycle est visible, versionné, auditable dans le cockpit
+  spreadsheet
+
+Ce n'est pas "un outil qui aide à coder". C'est une **unité de production
+logicielle distribuée** où assistants et experts collaborent à travers un
+bus de communication commun (Sheets + Git + CI/CD), sur tous les supports
+de sortie possibles.
+
+L'utilisateur de Copilot code plus vite. L'utilisateur d'Edster.cloud
+**recrute une capacité de production entière** qui dialogue avec lui
+et continue de travailler quand il dort.
+
+=== La Dette Technique Cross-Langage comme Carburant
+
+Edster.cloud a fait un **choix de stack orienté** (Kotlin, Gradle, AsciiDoc,
+PlantUML, RevealJS). La forge provisionne cette stack avec sa base de code.
+
+Mais la réalité du terrain, c'est la **dette technique multilingue** :
+des projets existent en Python, Java, JavaScript, PHP, Ruby... accumulés
+depuis des années, maintenus par habitude, jamais migrés.
+
+La forge n'est pas qu'un outil de bootstrap greenfield. C'est un
+**moteur de migration cross-langage** :
+
+- Un expert fine-tuné sur la stack cible (Kotlin/Gradle) lit le code
+  source legacy
+- L'assistant conversationnel (via LangChain4j) orchestre la traduction :
+  analyse du code existant → segmentation en modules → traduction
+  idiomatique → injection dans le pipeline CI/CD cible
+- Les logs et le dashboard spreadsheet tracent chaque étape de migration
+- Le corrigeable n'est pas juste du neuf — c'est de l'existant qu'on
+  libère de sa dette technique
+
+C'est un acte facturable supplémentaire : *"Migrer un projet Python/Java/PHP
+vers la forge Kotlin/Gradle"* = crédits. La forge provisionne la destination,
+les experts font le portage, le dashboard pilote la migration.
+
 == Vue d'Ensemble
 
 [plantuml]
@@ -219,28 +279,123 @@ Le cockpit n'est pas figé. L'IA peut proposer une nouvelle version du dashboard
 
 == Modèle Économique
 
-=== Crédits
+=== BYOK (Bring Your Own Key)
 
-- L'utilisateur achète des crédits
-- Chaque acte a un coût différent :
-  - Slide RevealJS : 1 crédit
-  - Diagramme PlantUML : 1 crédit
-  - Formulaire Google Forms : 2 crédits
-  - Correction IA notebook : 1 crédit
-  - Capsule vidéo pédagogique : 5 crédits
-  - Fine-tuning expert domaine : 10 crédits
+Edster.cloud ne paie **aucun token LLM**. L'utilisateur amène ses propres
+clés API (DeepSeek, Claude, Gemini, HuggingFace). Les appels aux gros
+modèles passent par le pipeline Gradle → LangChain4j avec les credentials
+du client.
 
-=== Double Licence
+Edster.cloud ne fournit que la forge et le provisionnement — jamais le
+carburant LLM.
 
-- *Facturable* : génération à la demande via Edster.cloud → Google Cloud API →
-  livraison Drive ou mail. Script de création non fourni
-- *Open (Apache 2.0)* : workspace-engine complet + pipeline Gradle → personnalisable,
-  maître de son infra et runtime
+=== Trois Tiers
+
+[cols="1,2,2"]
+|===
+| Tier | Ce qui est livré | Modèle
+| *Open Source* | Code source du workspace-engine + pipeline Gradle | Apache 2.0,
+gratuit. L'utilisateur peut tout faire manuellement.
+
+| *Provisionnement* | Requête de création de la forge clé en main sur
+Google Cloud | Payant en crédits. Déploiement automatisé du dashboard
+Sheets, GAS, CI/CD connecté.
+
+| *Actes* | Requête de génération (slide, formulaire, diagramme, vidéo,
+fine-tuning, correction IA) | Payant en crédits. Exécution côté Edster.cloud
+via Google Cloud API. Le LLM appelé utilise la clé API du client (BYOK).
+|===
+
+=== Grille de Crédits
+
+[cols="1,1,3"]
+|===
+| Acte | Crédits | Détail
+| Provisionnement dashboard forge | 3 | Sheets + GAS + CI/CD connecté
+| Slide RevealJS | 1 | AsciiDoc → RevealJS via Gradle
+| Formulaire Google Forms | 2 | Prompt → JSON → Form auto-créé
+| Diagramme PlantUML | 1 | Texte → PlantUML → PNG/SVG
+| Capsule vidéo pédagogique | 5 | Slides + TTS + ffmpeg → MP4
+| Fine-tuning expert domaine | 10 | Dataset → Fine-tune → GGUF → Ollama Cloud
+| Correction IA notebook | 1 | Analyse logs → LLM → notebook corrigé
+| Migration cross-langage (projet) | 15 | Code legacy (Python, Java, JS, PHP...) → forge Kotlin/Gradle, tracé dashboard
+|===
 
 === Ratio Économique IA
 
 - 90% des appels = 14B Ollama local (gratuit, inférence dans Docker CI)
-- 10% = gros modèle API (crédits Edster.cloud)
+- 10% = gros modèle API → clé client (BYOK), coût zéro pour Edster.cloud
+
+Le seul coût réel pour Edster.cloud : Google Cloud API
+(pour le provisionnement et les actes). Pas de facture LLM.
+
+== Dialogue CI/CD — On Parle aux Tâches, Elles Répondent par Logs et CD
+
+Le spreadsheet n'est pas un dashboard passif — c'est une **interface de
+dialogue** entre l'humain et la forge IA.
+
+=== Le Modèle Conversationnel
+
+- **On parle** → via l'exécution CI. Modifier `TRIGGER_FIX`, pousser un
+  commit, dispatcher un `workflow_dispatch`, peupler l'arbre de prompts
+- **Les tâches assistées par IA répondent** → via deux canaux :
+  - *Logs* — écriture dans Sheets (`log_step`, `prompt_history`,
+    résultats de validation). C'est la *voix* de la forge
+  - *CD* — livraison d'artefacts : notebook corrigé pushé sur `fix/`,
+    modèle fine-tuné sur Ollama Cloud, slide rendue, formulaire créé
+    dans Drive. C'est l'*action* de la forge
+
+=== Ce que signifie "parler aux tâches"
+
+Cela signifie que chaque action déclenchée dans le pipeline est un
+**message** :
+
+[cols="1,2,2"]
+|===
+| Message (CI trigger) | Réponse (Logs) | Action (CD)
+| `TRIGGER_FIX = TRUE` | `analyzeColabLogs: started`, `fix applied` | Notebook
+corrigé pushé, Drive mis à jour
+| Arbre de prompts dépilé | `prompt 3/7: score 0.8`, `prompt 4/7: score 0.9` |
+Artefact généré (slide, formulaire, diagramme)
+| `workflow_dispatch` | `fine-tuning: phase 3/5 ETA 12min` | Modèle GGUF
+sur Ollama Cloud
+| Nouveau notebook onboardé | `instrumentNotebook: 12 cells injected` | Notebook
+instrumenté dans Drive
+|===
+
+L'humain parle en déclenchant. La forge répond en loggant et en livrant.
+Le dashboard spreadsheet est le canal de cette conversation.
+
+Le `clasp logs` en terminal est la capacité de *lire la conversation*
+sans même ouvrir le spreadsheet.
+
+=== Conversation Persistante en Contexte Augmenté
+
+Le runner CI/CD ne fait pas des appels stateless. Durant tout son cycle
+de vie, il maintient une **conversation persistante** dont le contexte
+s'enrichit à chaque interaction :
+
+. Le runner démarre → LangChain4j charge le contexte initial depuis Git :
+   - Historique des logs (`logs/colab/*.csv`)
+   - Prompt history (`prompt_history` dans Sheets)
+   - Arbre de prompts actuel (feuille `tree`)
+   - Plan et décisions précédentes (`PLAN.adoc`)
+. À chaque itération du cycle décision/génération/évaluation, le contexte
+   **s'augmente** :
+   - La réponse du 14B (décision) est injectée comme contexte pour le
+     prochain appel au gros modèle
+   - Le score d'évaluation de l'étape N devient un indicateur pour
+     ajuster les paramètres de l'étape N+1
+   - Les patterns d'erreur découverts enrichissent le prompt system
+   - LangGraph4j gère le graphe conversationnel : mémoire, backtracking,
+     branches alternatives
+. Le runner ne repart jamais de zéro — il **hérite** du contexte accumulé
+   par les runners précédents via Git
+. En fin de cycle, le runner écrit son contexte augmenté dans Git/Sheets :
+   le prochain runner le chargera et poursuivra la conversation
+
+C'est la différence fondamentale avec un appel API ponctuel : chaque
+exécution est une **suite de la conversation**, pas une page blanche.
 
 == Outils en Terminal
 
