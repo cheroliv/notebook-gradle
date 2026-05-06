@@ -26,7 +26,7 @@ huggingface_hub, gspread
 
 === Contexte — Cercles de Confiance
 
-Ce projet vit dans `__repositories__/notebook-gradle/` → *cercle 4 (public, MIT)*.
+Ce projet vit dans `foundry/notebook-gradle/` → *cercle 4 (public, MIT)*.
 - Ne pas referencer de secrets ici (ils sont dans `configuration/`, cercle 1)
 - La data consommee est dans `office/` (cercle 2)
 - Les notebooks sources sont dans `office/notebooks/` (cercle 2)
@@ -229,12 +229,12 @@ reference. Ces chemins sont LAZY — ne jamais charger leur contenu en EAGER.
 
 |===
 | Projet | Chemin | Role
-| plantuml-gradle | `/home/cheroliv/workspace/__repositories__/plantuml-gradle/plantuml-plugin` | Plugin Gradle mature, reference principale
-| bakery-gradle | `/home/cheroliv/workspace/__repositories__/bakery-gradle/bakery-plugin` | Plugin Gradle convention-based
-| codebase-gradle | `/home/cheroliv/workspace/__repositories__/codebase-gradle` | Plugin Gradle (fine-tuning, BYOK)
-| newpipe-gradle | `/home/cheroliv/workspace/__repositories__/newpipe-gradle` | Plugin Gradle
-| slider-gradle | `/home/cheroliv/workspace/__repositories__/slider-gradle` | Plugin Gradle
-| readme-gradle | `/home/cheroliv/workspace/__repositories__/readme-gradle` | Plugin Gradle
+| plantuml-gradle | `/home/cheroliv/workspace/foundry/plantuml-gradle/plantuml-plugin` | Plugin Gradle mature, reference principale
+| bakery-gradle | `/home/cheroliv/workspace/foundry/bakery-gradle/bakery-plugin` | Plugin Gradle convention-based
+| codebase-gradle | `/home/cheroliv/workspace/foundry/codebase-gradle` | Plugin Gradle (fine-tuning, BYOK)
+| newpipe-gradle | `/home/cheroliv/workspace/foundry/newpipe-gradle` | Plugin Gradle
+| slider-gradle | `/home/cheroliv/workspace/foundry/slider-gradle` | Plugin Gradle
+| readme-gradle | `/home/cheroliv/workspace/foundry/readme-gradle` | Plugin Gradle
 |===
 
 == Fichiers EAGER (charges automatiquement)

@@ -337,7 +337,7 @@ Mais ceci est une cible N+1. La V0 séquentielle suffit pour démarrer.
 [cols="1,3,3"]
 |===
 | Tier | Ce qui est livré | Modèle
-| *Open Source* | Code source du workspace-engine + pipeline Gradle | Apache 2.0,
+| *Open Source* | Code source du engine + pipeline Gradle | Apache 2.0,
 gratuit. L'utilisateur peut tout faire manuellement. C'est la surface d'appel,
 l'entonnoir — pas le produit.
 

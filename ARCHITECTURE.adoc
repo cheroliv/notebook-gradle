@@ -35,7 +35,7 @@
 - **Clonable** — `git clone`. Tout est versionné dans Git (code, config,
   dashboard, historique). La forge est un dépôt. Un dépôt est une forge.
   Fork = nouvelle unité de production indépendante
-- **Open Source (Apache 2.0)** — le workspace-engine est libre. L'utilisateur
+- **Open Source (Apache 2.0)** — le engine est libre. L'utilisateur
   clone, personnalise, est maître de son infra. Edster.cloud vend les
   *générations à l'acte* (crédits), pas la forge elle-même
 
@@ -294,7 +294,7 @@ carburant LLM.
 [cols="1,2,2"]
 |===
 | Tier | Ce qui est livré | Modèle
-| *Open Source* | Code source du workspace-engine + pipeline Gradle | Apache 2.0,
+| *Open Source* | Code source du engine + pipeline Gradle | Apache 2.0,
 gratuit. L'utilisateur peut tout faire manuellement.
 
 | *Provisionnement* | Requête de création de la forge clé en main sur

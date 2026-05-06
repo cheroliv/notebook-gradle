@@ -16,7 +16,7 @@ des notebooks de fine-tuning sur des petits modeles avant de scaler.
 
 == Actions
 
-1. Creation de la structure du projet `__repositories__/notebook-gradle/`
+1. Creation de la structure du projet `foundry/notebook-gradle/`
 2. Redaction de `AGENT.adoc` (directives agent, cercles de confiance, references LAZY)
 3. Redaction de `LAZY_EAGER_ESSENTIALS.adoc`
 4. Redaction de `PROMPT_REPRISE.adoc` pour session 1
@@ -44,7 +44,7 @@ des notebooks de fine-tuning sur des petits modeles avant de scaler.
 
 == Commandes
 
-- `mkdir -p __repositories__/notebook-gradle/.agents/{sessions,archives,backup,encyclopedies}`
+- `mkdir -p foundry/notebook-gradle/.agents/{sessions,archives,backup,encyclopedies}`
 - `gh repo create notebook-gradle --public --description "Plugin Gradle d'observabilite pour notebooks Google Colab"`
 - `git init && git add . && git commit -m "..." && git push`
 

@@ -18,7 +18,7 @@ La session s'est développée en plusieurs phases :
 1. Création de `spreadsheet.adoc` — analyse pro/cons (8 avantages, 8 limites)
 2. Rectification du verdict : spreadsheet = cockpit définitif, pas MVP transitoire
 3. Ajout modèle économique : crédits, tier facturable (génération à la demande
-   sans script) + tier open Apache 2.0 (workspace-engine personnalisable)
+   sans script) + tier open Apache 2.0 (engine personnalisable)
 4. Ajout boucle clasp + opencode TDD fermée dans un terminal unique
 5. Ajout bootstrap multi-user V0 (séquentiel sans pool) + évolution N+1 (fan-out)
 6. Création du notebook vierge `office/notebooks/gradle-ci-cd-ai.ipynb`
