@@ -3,7 +3,7 @@ plugins {
     id("com.gradle.plugin-publish") version "1.3.1"
 }
 
-group = "com.cheroliv"
+group = "education.cccp"
 version = "0.0.1-SNAPSHOT"
 
 repositories {
@@ -27,7 +27,7 @@ gradlePlugin {
 
     plugins {
         create("notebookPlugin") {
-            id = "com.cheroliv.notebook"
+            id = "education.cccp.notebook"
             displayName = "Notebook Gradle Plugin"
             description = "Pipeline d'observabilite pour notebooks Google Colab. " +
                 "Logging automatise Colab → Sheets → GAS → GitHub → CI/CD " +
